@@ -96,6 +96,18 @@ function addMinutes(timeStr: string, mins: number) {
   const newM = total % 60;
   return `${String(newH).padStart(2, '0')}:${String(newM).padStart(2, '0')}`;
 }
+const BANBOKNING_STYLES: Record<string, { bg: string, header: string, text: string }> = {
+  style_1: { bg: '#B3EEAC', header: '#1a4c15', text: '#49483c' }, // Träning
+  style_2: { bg: '#ACDBEE', header: '#2b4958', text: '#49483c' }, // Seriespel?
+  style_3: { bg: '#E7D6A2', header: '#55561a', text: '#49483c' }, // Uthyrning
+  style_4: { bg: '#fad4d4', header: '#D96666', text: '#49483c' }, // Isvård
+  style_5: { bg: '#D1C2F0', header: '#6633CC', text: '#49483c' }, // Lunchcurling
+  style_6: { bg: '#BDE6E1', header: '#22AA99', text: '#49483c' },
+  style_7: { bg: '#F5CCB8', header: '#DD5511', text: '#49483c' },
+  style_8: { bg: '#C2DCC7', header: '#329262', text: '#49483c' },
+  style_9: { bg: '#E7DCCE', header: '#B08B59', text: '#49483c' },
+  default: { bg: '#f1f5f9', header: '#64748b', text: '#475569' }
+};
 
 const GRADE_COLORS: Record<Grade, { block: string, icon: string, badge: string }> = {
   A: {
@@ -483,32 +495,243 @@ export default function CalendarClient({ initialData }: Props) {
                     {blocks.map((b, idx) => (
                       <div 
                         key={idx}
-                        onClick={() => setSelectedBlock(b)}
-                        className={`flex items-center justify-between p-4 rounded-2xl border transition-all cursor-pointer group shadow-sm ${GRADE_COLORS[b.grade].block}`}
+                        className={`flex flex-col rounded-2xl border transition-all shadow-sm ${GRADE_COLORS[b.grade].block}`}
                       >
-                        <div className="flex items-center gap-4">
-                          <div className={`p-3.5 rounded-xl transition-colors ${GRADE_COLORS[b.grade].icon}`}>
-                            <Clock size={24} />
-                          </div>
-                          <div>
-                            <div className="flex items-center gap-2">
-                              <div className="font-black text-slate-900 text-xl tracking-tight">
-                                {b.start} <span className="text-slate-400 font-medium px-1 text-lg">to</span> {b.end}
+                        <div 
+                           onClick={() => setSelectedBlock(selectedBlock?.start === b.start && selectedBlock?.date === day.date ? null : { ...b, date: day.date })}
+                           className="flex items-center justify-between p-4 cursor-pointer group"
+                        >
+                          <div className="flex items-center gap-4">
+                            <div className={`p-3.5 rounded-xl transition-colors ${GRADE_COLORS[b.grade].icon}`}>
+                              <Clock size={24} />
+                            </div>
+                            <div>
+                              <div className="flex items-center gap-2">
+                                <div className="font-black text-slate-900 text-xl tracking-tight">
+                                  {b.start} <span className="text-slate-400 font-medium px-1 text-lg">to</span> {b.end}
+                                </div>
+                                {b.grade !== 'None' && (
+                                  <span className={`px-2 py-0.5 rounded text-xs font-black uppercase ${GRADE_COLORS[b.grade].badge}`}>
+                                    Grade {b.grade}
+                                  </span>
+                                )}
                               </div>
-                              {b.grade !== 'None' && (
-                                <span className={`px-2 py-0.5 rounded text-xs font-black uppercase ${GRADE_COLORS[b.grade].badge}`}>
-                                  Grade {b.grade}
-                                </span>
-                              )}
-                            </div>
-                            <div className="text-sm text-slate-500 font-semibold mt-1">
-                              {b.slots.length} available {b.slots.length === 1 ? 'slot' : 'slots'}
+                              <div className="text-sm text-slate-500 font-semibold mt-1">
+                                {b.slots.length} available {b.slots.length === 1 ? 'slot' : 'slots'}
+                              </div>
                             </div>
                           </div>
+                          <div className="text-slate-300 group-hover:text-slate-500 transition-transform duration-300 pr-2">
+                            <ChevronDown size={24} strokeWidth={3} className={selectedBlock?.start === b.start && selectedBlock?.date === day.date ? 'rotate-180' : ''} />
+                          </div>
                         </div>
-                        <div className="text-slate-300 group-hover:text-slate-500 transition-colors pr-2">
-                          <ChevronRight size={24} strokeWidth={3} />
-                        </div>
+
+                        {/* Accordion Content */}
+                        {selectedBlock?.start === b.start && selectedBlock?.date === day.date && (
+                          <div className="pt-0 border-t border-slate-100 bg-slate-50/50 rounded-b-2xl">
+                             <div className="mt-2 bg-white rounded-xl border-y sm:border border-slate-200 overflow-hidden shadow-sm flex flex-col -mx-4 sm:mx-4 mb-4">
+                                <div 
+                                  className="overflow-x-auto pb-4 custom-scrollbar" 
+                                  ref={(el) => {
+                                    if (el) {
+                                      // On mount, wait a tick and scroll to center the first available block
+                                      setTimeout(() => {
+                                        const bookBtn = el.querySelector('button');
+                                        if (bookBtn && el.parentElement) {
+                                           const scrollLeft = bookBtn.getBoundingClientRect().left + el.scrollLeft - el.getBoundingClientRect().left - (el.clientWidth / 2) + (bookBtn.clientWidth / 2);
+                                           el.scrollTo({ left: scrollLeft, behavior: 'smooth' });
+                                        }
+                                      }, 50);
+                                    }
+                                  }}
+                                >
+                                  <div className="w-max min-w-full text-xs">
+                                    {(() => {
+                                      const dayData = data.find(d => d.date === selectedBlock.date);
+                                      if (!dayData) return null;
+                                      
+                                      // Find indices to slice
+                                      const startIdx = dayData.slots.findIndex(s => s.time === selectedBlock.start);
+                                      const endIdx = dayData.slots.findIndex(s => s.time === selectedBlock.end);
+                                      
+                                      const validStartIdx = startIdx !== -1 ? startIdx : 0;
+                                      const validEndIdx = endIdx !== -1 ? endIdx : dayData.slots.length - 1;
+                                      
+                                      // Show 1.5 hours (3 slots) before and after
+                                      const sliceStart = Math.max(0, validStartIdx - 3);
+                                      const sliceEnd = Math.min(dayData.slots.length, validEndIdx + 4);
+                                      
+                                      const visibleSlots = dayData.slots.slice(sliceStart, sliceEnd);
+                                      
+                                      const getAvailableDuration = (track: 'A' | 'B' | 'C' | 'D', startIndex: number) => {
+                                         let count = 0;
+                                         for(let i = startIndex; i < dayData.slots.length; i++) {
+                                           if(dayData.slots[i].trackInfo[track].available) {
+                                             count++;
+                                           } else {
+                                             break;
+                                           }
+                                         }
+                                         return count * 30; // duration in minutes
+                                      };
+
+                                      const tracks: ('A' | 'B' | 'C' | 'D')[] = ['A', 'B', 'C', 'D'];
+
+                                      return (
+                                        <div className="flex flex-col pt-2">
+                                          {/* Track Rows */}
+                                          {tracks.map((track, trackIdx) => (
+                                            <div key={track} className={`flex flex-col bg-slate-50 ${trackIdx < 3 ? 'border-b-4 border-slate-200/60 pb-1' : ''}`}>
+                                              {/* Row Header: Track Name */}
+                                              <div className="sticky left-0 z-10 w-max pl-2 pt-1.5 pb-1">
+                                                <div className="inline-block px-2.5 py-0.5 text-[10px] font-black text-slate-500 uppercase tracking-widest bg-white border border-slate-200 shadow-sm rounded-md">
+                                                  Bana {track}
+                                                </div>
+                                              </div>
+                                              
+                                              {/* Cells for this track */}
+                                              <div className="flex bg-white border-y border-slate-200/80">
+                                                {visibleSlots.map((slot, idx) => {
+                                                const originalIndex = dayData.slots.findIndex(s => s.time === slot.time);
+                                                const prevSlot = idx > 0 ? visibleSlots[idx - 1] : undefined;
+                                                
+                                                const info = slot.trackInfo[track];
+                                                const prevInfo = prevSlot?.trackInfo[track];
+                                                
+                                                const isSameAsPrev = prevInfo && prevInfo.text === info.text && prevInfo.available === info.available;
+                                                
+                                                let bgColor = 'bg-slate-100 text-slate-600';
+                                                if (info.available) bgColor = 'bg-white text-slate-400';
+                                                else if (info.text.toLowerCase().includes('isvård')) bgColor = 'bg-rose-100/60 text-rose-800';
+                                                else if (info.text.toLowerCase().includes('träning')) bgColor = 'bg-green-100/60 text-green-900';
+                                                else if (info.text.toLowerCase().includes('uthyrning')) bgColor = 'bg-amber-100/60 text-amber-900';
+
+                                                if (info.available && !isSameAsPrev) {
+                                                  const durationMins = getAvailableDuration(track, originalIndex);
+                                                  const visibleSpanCount = Math.min(durationMins / 30, visibleSlots.length - idx);
+                                                  
+                                                  const isSelecting = bookingData?.track === track && bookingData?.date === selectedBlock.date;
+                                                  
+                                                  if (isSelecting) {
+                                                     const slotsInBlock = Array.from({ length: durationMins / 30 }).map((_, i) => addMinutes(slot.time, i * 30));
+                                                     const visibleSlotsInBlock = slotsInBlock.filter(t => visibleSlots.some(vs => vs.time === t));
+
+                                                     return (
+                                                       <div key={slot.time} style={{ width: `${visibleSpanCount * 3}rem` }} className="shrink-0 flex items-stretch border-r border-slate-200/50 bg-slate-50 relative group/boka">
+                                                         {visibleSlotsInBlock.map((subTime) => {
+                                                            const isSelected = subTime >= bookingData.time && subTime < addMinutes(bookingData.time, bookingData.maxDurationHours * 60);
+                                                            return (
+                                                              <div 
+                                                                key={subTime} 
+                                                                className="flex-1 border-r border-dashed border-slate-300 last:border-r-0 p-0.5 flex flex-col items-center justify-center relative cursor-pointer group/cell hover:bg-slate-100 min-h-[44px]"
+                                                                onClick={() => {
+                                                                  if (isSelected) {
+                                                                     if (bookingData.maxDurationHours <= 0.5) {
+                                                                       setBookingData(null);
+                                                                     } else {
+                                                                       setBookingData({ ...bookingData, time: subTime, maxDurationHours: 0.5 });
+                                                                     }
+                                                                  } else {
+                                                                     if (subTime === addMinutes(bookingData.time, bookingData.maxDurationHours * 60)) {
+                                                                        setBookingData({ ...bookingData, maxDurationHours: bookingData.maxDurationHours + 0.5 });
+                                                                     } else if (addMinutes(subTime, 30) === bookingData.time) {
+                                                                        setBookingData({ ...bookingData, time: subTime, maxDurationHours: bookingData.maxDurationHours + 0.5 });
+                                                                     } else {
+                                                                        setBookingData({ ...bookingData, time: subTime, maxDurationHours: 0.5 });
+                                                                     }
+                                                                  }
+                                                                }}
+                                                              >
+                                                                <div className={`w-full h-full rounded transition-all flex items-center justify-center ${isSelected ? 'bg-emerald-500 shadow-sm border border-emerald-600' : 'bg-white border border-slate-200 group-hover/cell:border-emerald-300'}`}>
+                                                                   {isSelected && <span className="text-white font-black text-[10px]">✓</span>}
+                                                                </div>
+                                                              </div>
+                                                            );
+                                                         })}
+                                                       </div>
+                                                     );
+                                                  }
+
+                                                  const endTime = addMinutes(slot.time, durationMins);
+                                                  const decimalLength = durationMins / 60;
+                                                  
+                                                  const hours = Math.floor(durationMins / 60);
+                                                  const mins = durationMins % 60;
+                                                  const durationStr = hours > 0 ? `${hours}h ${mins > 0 ? mins + 'm' : ''}` : `${mins}m`;
+
+                                                  return (
+                                                    <div key={slot.time} style={{ width: `${visibleSpanCount * 3}rem` }} className="shrink-0 p-1 border-r border-slate-200/50 bg-emerald-50 relative group/boka">
+                                                      <button 
+                                                        onClick={() => setBookingData({
+                                                          date: selectedBlock.date,
+                                                          time: slot.time,
+                                                          track: track,
+                                                          maxDurationHours: Math.min(1, decimalLength)
+                                                        })}
+                                                        className="w-full h-full min-h-[44px] bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg py-1 shadow-sm transition-all hover:shadow-md hover:-translate-y-0.5 flex flex-col items-center justify-center overflow-hidden px-1"
+                                                      >
+                                                        <span className="font-black text-xs leading-tight">Boka</span>
+                                                        <span className="text-[9px] font-bold text-emerald-100 opacity-90 leading-tight whitespace-nowrap">Max {durationStr}</span>
+                                                      </button>
+                                                    </div>
+                                                  );
+                                                }
+
+                                                if (info.available && isSameAsPrev) return null;
+
+                                                if (!info.available && !isSameAsPrev) {
+                                                  let spanCount = 1;
+                                                  for (let i = idx + 1; i < visibleSlots.length; i++) {
+                                                    if (visibleSlots[i].trackInfo[track].text === info.text) {
+                                                      spanCount++;
+                                                    } else {
+                                                      break;
+                                                    }
+                                                  }
+                                                  
+                                                  const blockStartTime = slot.time;
+                                                  const blockEndTime = addMinutes(slot.time, spanCount * 30);
+                                                  
+                                                  // Find the official color style
+                                                  const styleKey = info.style.includes('style_') ? info.style.split(' ')[0] : 'default';
+                                                  const palette = BANBOKNING_STYLES[styleKey] || BANBOKNING_STYLES.default;
+
+                                                  return (
+                                                    <div 
+                                                      key={slot.time} 
+                                                      style={{ width: `${spanCount * 3}rem`, backgroundColor: palette.bg }} 
+                                                      className="shrink-0 flex flex-col border-r border-slate-200/50 overflow-hidden min-h-[44px]"
+                                                    >
+                                                      <div 
+                                                        style={{ backgroundColor: palette.header }}
+                                                        className="px-1 py-0.5 text-[8px] font-black text-white truncate leading-none text-center"
+                                                      >
+                                                        {blockStartTime}-{blockEndTime}
+                                                      </div>
+                                                      <div 
+                                                        style={{ color: palette.text }}
+                                                        className="flex-1 flex items-center justify-center text-[9px] text-center font-bold leading-tight px-1 py-0.5 overflow-hidden"
+                                                      >
+                                                        <span className="line-clamp-2">{info.text || 'Bokad'}</span>
+                                                      </div>
+                                                    </div>
+                                                  );
+                                                }
+
+                                                if (!info.available && isSameAsPrev) return null;
+                                                return null;
+                                              })}
+                                              </div>
+                                            </div>
+                                          ))}
+                                        </div>
+                                      );
+                                    })()}
+                                  </div>
+                                </div>
+                             </div>
+                          </div>
+                        )}
                       </div>
                     ))}
                   </div>
@@ -518,196 +741,6 @@ export default function CalendarClient({ initialData }: Props) {
           )}
         </div>
       </main>
-
-      {/* Drawer / Bottom Sheet */}
-      {selectedBlock && (
-        <div 
-          className="fixed inset-0 z-50 flex flex-col justify-end sm:justify-center items-center bg-slate-900/40 backdrop-blur-sm p-0 sm:p-4 transition-all"
-          onClick={() => setSelectedBlock(null)}
-        >
-          <div 
-            className="bg-white w-full sm:max-w-md rounded-t-[32px] sm:rounded-3xl max-h-[85vh] flex flex-col overflow-hidden shadow-2xl animate-in slide-in-from-bottom-full sm:slide-in-from-bottom-0 sm:zoom-in-95 duration-200"
-            onClick={e => e.stopPropagation()}
-          >
-            {/* Drawer Header */}
-            <div className={`px-6 py-5 border-b flex justify-between items-center sticky top-0 z-10 ${selectedBlock.grade !== 'None' ? GRADE_COLORS[selectedBlock.grade].block.split(' ')[0] : 'bg-white border-slate-100'}`}>
-              <div>
-                <h3 className="font-black text-xl text-slate-900 flex items-center gap-2">
-                  {new Date(selectedBlock.date).toLocaleDateString('en-US', { weekday: 'long', month: 'short', day: 'numeric' })}
-                  {selectedBlock.grade !== 'None' && (
-                     <span className={`px-2 py-0.5 rounded text-xs font-black uppercase ${GRADE_COLORS[selectedBlock.grade].badge}`}>
-                       Grade {selectedBlock.grade}
-                     </span>
-                  )}
-                </h3>
-                <div className="flex items-center gap-2 text-slate-600 font-bold mt-1">
-                  <Clock size={16} />
-                  <span>{selectedBlock.start} - {selectedBlock.end}</span>
-                </div>
-              </div>
-              <button 
-                onClick={() => setSelectedBlock(null)} 
-                className="p-2.5 bg-white/50 hover:bg-white border border-transparent hover:border-slate-200 rounded-full text-slate-600 transition-colors shadow-sm"
-              >
-                 <X size={20} strokeWidth={3} />
-              </button>
-            </div>
-            
-            {/* Drawer Content */}
-            <div className="overflow-y-auto p-6 space-y-5 bg-slate-50 flex-1">
-              
-              {/* Visual Day Schedule Grid */}
-              <div className="bg-white rounded-2xl border border-slate-200 overflow-hidden shadow-sm flex flex-col">
-                <div className="px-4 py-3 border-b border-slate-100 bg-slate-50">
-                  <h4 className="font-bold text-slate-700 text-sm flex items-center gap-2">
-                    <CalendarIcon size={16} /> Dagsschema
-                  </h4>
-                </div>
-                <div className="overflow-x-auto pb-4">
-                  <div className="w-max min-w-full text-xs">
-                    {(() => {
-                      const dayData = data.find(d => d.date === selectedBlock.date);
-                      if (!dayData) return null;
-                      
-                      // Find indices to slice
-                      const startIdx = dayData.slots.findIndex(s => s.time === selectedBlock.start);
-                      const endIdx = dayData.slots.findIndex(s => s.time === selectedBlock.end);
-                      
-                      const validStartIdx = startIdx !== -1 ? startIdx : 0;
-                      const validEndIdx = endIdx !== -1 ? endIdx : dayData.slots.length - 1;
-                      
-                      // Show 1.5 hours (3 slots) before and after
-                      const sliceStart = Math.max(0, validStartIdx - 3);
-                      const sliceEnd = Math.min(dayData.slots.length, validEndIdx + 4);
-                      
-                      const visibleSlots = dayData.slots.slice(sliceStart, sliceEnd);
-                      
-                      // Calculate consecutive available times to display max duration
-                      const getAvailableDuration = (track: 'A' | 'B' | 'C' | 'D', startIndex: number) => {
-                         let count = 0;
-                         for(let i = startIndex; i < dayData.slots.length; i++) {
-                           if(dayData.slots[i].trackInfo[track].available) {
-                             count++;
-                           } else {
-                             break;
-                           }
-                         }
-                         return count * 30; // duration in minutes
-                      };
-
-                      const tracks: ('A' | 'B' | 'C' | 'D')[] = ['A', 'B', 'C', 'D'];
-
-                      return (
-                        <div className="flex flex-col border-t border-slate-200">
-                          {/* Header Row: Times */}
-                          <div className="flex border-b border-slate-200 bg-slate-100 font-bold text-slate-500 text-center sticky top-0 z-10">
-                            <div className="w-16 shrink-0 py-2 sticky left-0 bg-slate-100 z-20 border-r border-slate-200 shadow-[2px_0_5px_-2px_rgba(0,0,0,0.1)]">Bana</div>
-                            {visibleSlots.map(slot => (
-                              <div key={slot.time} className="w-24 shrink-0 py-2 border-r border-slate-200/50">
-                                {slot.time}
-                              </div>
-                            ))}
-                          </div>
-
-                          {/* Track Rows */}
-                          {tracks.map((track, trackIdx) => (
-                            <div key={track} className={`flex ${trackIdx < 3 ? 'border-b border-slate-200/50' : ''}`}>
-                              {/* Row Header: Track Name */}
-                              <div className="w-16 shrink-0 py-2 text-center font-black text-slate-700 bg-slate-50 sticky left-0 z-10 border-r border-slate-200 flex items-center justify-center shadow-[2px_0_5px_-2px_rgba(0,0,0,0.05)]">
-                                {track}
-                              </div>
-                              
-                              {/* Cells for this track */}
-                              {visibleSlots.map((slot, idx) => {
-                                const originalIndex = dayData.slots.findIndex(s => s.time === slot.time);
-                                const prevSlot = idx > 0 ? visibleSlots[idx - 1] : undefined;
-                                
-                                const info = slot.trackInfo[track];
-                                const prevInfo = prevSlot?.trackInfo[track];
-                                
-                                const isSameAsPrev = prevInfo && prevInfo.text === info.text && prevInfo.available === info.available;
-                                
-                                let bgColor = 'bg-slate-100 text-slate-600';
-                                if (info.available) bgColor = 'bg-white text-slate-400';
-                                else if (info.text.toLowerCase().includes('isvård')) bgColor = 'bg-rose-100/60 text-rose-800';
-                                else if (info.text.toLowerCase().includes('träning')) bgColor = 'bg-green-100/60 text-green-900';
-                                else if (info.text.toLowerCase().includes('uthyrning')) bgColor = 'bg-amber-100/60 text-amber-900';
-
-                                // If it's a new available block, show the interactive Book button
-                                if (info.available && !isSameAsPrev) {
-                                  const durationMins = getAvailableDuration(track, originalIndex);
-                                  const hours = Math.floor(durationMins / 60);
-                                  const mins = durationMins % 60;
-                                  const durationStr = hours > 0 ? `${hours}h ${mins > 0 ? mins + 'm' : ''}` : `${mins}m`;
-                                  
-                                  const bookDate = selectedBlock.date;
-                                  const decimalLength = durationMins / 60;
-
-                                  // Calculate how many cells this block spans visually in the visible window
-                                  const visibleSpanCount = Math.min(durationMins / 30, visibleSlots.length - idx);
-
-                                  return (
-                                    <div key={slot.time} style={{ width: `${visibleSpanCount * 6}rem` }} className="shrink-0 p-1.5 border-r border-slate-200/50 bg-emerald-50">
-                                      <button 
-                                        onClick={() => setBookingData({
-                                          date: bookDate,
-                                          time: slot.time,
-                                          track: track,
-                                          maxDurationHours: decimalLength
-                                        })}
-                                        className="w-full h-full min-h-[44px] bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg py-1 shadow-sm transition-all hover:shadow-md hover:-translate-y-0.5 flex flex-col items-center justify-center overflow-hidden px-1"
-                                      >
-                                        <span className="font-black text-xs leading-tight">Boka</span>
-                                        <span className="text-[9px] font-bold text-emerald-100 opacity-90 leading-tight whitespace-nowrap">Max {durationStr}</span>
-                                      </button>
-                                    </div>
-                                  );
-                                }
-
-                                // Skip rendering if it's an available block continuing (handled by the span width of the first cell)
-                                if (info.available && isSameAsPrev) return null;
-
-                                // For Booked items
-                                if (!info.available && !isSameAsPrev) {
-                                  // Calculate span for booked items within the visible window
-                                  let spanCount = 1;
-                                  for (let i = idx + 1; i < visibleSlots.length; i++) {
-                                    if (visibleSlots[i].trackInfo[track].text === info.text) {
-                                      spanCount++;
-                                    } else {
-                                      break;
-                                    }
-                                  }
-
-                                  return (
-                                    <div key={slot.time} style={{ width: `${spanCount * 6}rem` }} className={`shrink-0 p-1.5 flex flex-col items-center justify-center text-[10px] text-center font-semibold leading-tight border-r border-slate-200/50 ${bgColor} overflow-hidden px-2`}>
-                                      <span className="truncate w-full">{info.text || 'Bokad'}</span>
-                                    </div>
-                                  );
-                                }
-
-                                // Skip rendering if it's a booked block continuing
-                                if (!info.available && isSameAsPrev) return null;
-
-                                return null;
-                              })}
-                            </div>
-                          ))}
-                        </div>
-                      );
-                    })()}
-                  </div>
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
-      )}
-
-      {/* Booking Form Modal */}
-      {bookingData && (
-        <BookingForm bookingData={bookingData} onClose={() => setBookingData(null)} />
-      )}
 
       {/* Config Modal */}
       {isConfigOpen && (
@@ -758,6 +791,67 @@ export default function CalendarClient({ initialData }: Props) {
                 Save Configuration
               </button>
             </div>
+          </div>
+        </div>
+      )}
+
+      {/* Fixed Action Bar Overlay for Inline Selection */}
+      {bookingData && (
+        <div className="fixed bottom-6 left-1/2 -translate-x-1/2 z-[60] animate-in slide-in-from-bottom-8 duration-300">
+          <div className="bg-slate-900 text-white p-3 rounded-2xl shadow-2xl flex items-center gap-4 w-max border border-slate-700">
+            <div className="flex flex-col pl-2">
+              <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Bana {bookingData.track} • {bookingData.date}</span>
+              <span className="text-base font-black">{bookingData.time} ({bookingData.maxDurationHours} timmar)</span>
+            </div>
+            
+            <button 
+              onClick={(e) => {
+                e.stopPropagation();
+                // Open the final native form in a new tab using a hidden form submission
+                const form = document.createElement('form');
+                form.method = 'POST';
+                form.action = 'https://www.banbokning.se/sundbyberg/book.php';
+                form.target = '_blank';
+                
+                const fields = {
+                  update_id: '0',
+                  date: bookingData.date.replace(/-/g, ''),
+                  bookdate: bookingData.date,
+                  series_id: '0',
+                  access: '3',
+                  booktime: `${bookingData.time}:00`,
+                  booklength: bookingData.maxDurationHours.toString(),
+                  'sheet[]': { 'A': '1', 'B': '2', 'C': '3', 'D': '4' }[bookingData.track],
+                  comment: 'BanbokningMirror'
+                };
+                
+                for (const [key, value] of Object.entries(fields)) {
+                  const input = document.createElement('input');
+                  input.type = 'hidden';
+                  input.name = key;
+                  input.value = value as string;
+                  form.appendChild(input);
+                }
+                
+                document.body.appendChild(form);
+                form.submit();
+                document.body.removeChild(form);
+                setBookingData(null);
+              }}
+              className="bg-emerald-500 hover:bg-emerald-600 text-white px-6 py-2.5 rounded-xl text-sm font-black shadow-sm transition-transform active:scale-95 ml-2"
+            >
+              Fortsätt
+            </button>
+            <button 
+              onClick={(e) => {
+                e.stopPropagation();
+                setBookingData(null);
+              }}
+              className="p-2.5 hover:bg-slate-800 rounded-xl text-slate-400 hover:text-white transition-colors border border-transparent hover:border-slate-700"
+              aria-label="Avbryt"
+            >
+              <X size={20} />
+            </button>
           </div>
         </div>
       )}
