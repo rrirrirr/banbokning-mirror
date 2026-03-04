@@ -1,8 +1,7 @@
-const fs = require('fs');
-const html = fs.readFileSync('sample.html', 'utf-8');
-const match = html.match(/name="booklength".*?<\/select>/s);
-if (match) {
-  console.log(match[0]);
-} else {
-  console.log('No selectLength found');
-}
+fetch('https://www.banbokning.se/sundbyberg/index.php?ok=2&&view=day&date=20260303')
+  .then(res => res.text())
+  .then(html => {
+    const fs = require('fs');
+    fs.writeFileSync('day.html', html);
+    console.log('Saved day.html');
+  });

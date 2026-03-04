@@ -415,13 +415,13 @@ export default function CalendarClient({ initialData }: Props) {
       
       if (allBooked && someBooked) {
          changed = true;
-         return { ...rb, status: 'confirmed' };
+         return { ...rb, status: 'confirmed' as const };
       } else if (someWesterberg) {
          changed = true;
-         return { ...rb, status: 'confirmed' };
+         return { ...rb, status: 'confirmed' as const };
       } else if (isOld && !allBooked) {
          changed = true;
-         return { ...rb, status: 'failed' };
+         return { ...rb, status: 'failed' as const };
       }
       
       return rb;
