@@ -1,8 +1,8 @@
 'use client';
 
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useEffect } from 'react';
 import { DaySchedule, BookingSlot } from '@/lib/calendar';
-import { CalendarIcon, Clock, MapPin, X, ChevronRight, ChevronDown, Info, RefreshCw, UserCircle2, Settings } from 'lucide-react';
+import { CalendarIcon, Clock, MapPin, X, ChevronRight, ChevronDown, Info, RefreshCw, UserCircle2, Settings, ShoppingCart, Trash2 } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 
 interface Props {
@@ -87,6 +87,15 @@ interface Block {
   slots: BookingSlot[];
   date: string;
   grade: Grade;
+}
+
+interface CartItem {
+  id: string;
+  date: string;
+  track: 'A' | 'B' | 'C' | 'D';
+  startTime: string;
+  endTime: string;
+  durationHours: number;
 }
 
 function addMinutes(timeStr: string, mins: number) {
@@ -328,6 +337,94 @@ export default function CalendarClient({ initialData }: Props) {
     } catch (e) {
       alert("Invalid JSON format. Please check your syntax.");
     }
+  };
+
+  // Cart State
+  const [cart, setCart] = useState<CartItem[]>([]);
+  const [isCartOpen, setIsCartOpen] = useState(false);
+
+  // Load cart from localStorage on mount
+  useEffect(() => {
+    const saved = localStorage.getItem('banbokning-cart-v1');
+    if (saved) {
+      try {
+        setCart(JSON.parse(saved));
+      } catch {
+        localStorage.removeItem('banbokning-cart-v1');
+      }
+    }
+  }, []);
+
+  // Save cart to localStorage when it changes
+  useEffect(() => {
+    localStorage.setItem('banbokning-cart-v1', JSON.stringify(cart));
+  }, [cart]);
+
+  // Cart helper functions
+  const generateId = () => `${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
+
+  const addToCart = (item: Omit<CartItem, 'id'>) => {
+    const exists = cart.some(c =>
+      c.track === item.track &&
+      c.date === item.date &&
+      c.startTime === item.startTime
+    );
+    if (exists) return;
+    setCart(prev => [...prev, { ...item, id: generateId() }]);
+  };
+
+  const removeFromCart = (id: string) => {
+    setCart(prev => prev.filter(c => c.id !== id));
+  };
+
+  const clearCart = () => {
+    setCart([]);
+  };
+
+  const isInCart = (date: string, track: string, startTime: string) => {
+    return cart.some(c =>
+      c.date === date &&
+      c.track === track &&
+      c.startTime === startTime
+    );
+  };
+
+  const openBookingTab = (item: CartItem) => {
+    const form = document.createElement('form');
+    form.method = 'POST';
+    form.action = 'https://www.banbokning.se/sundbyberg/book.php';
+    form.target = '_blank';
+
+    const fields = {
+      update_id: '0',
+      date: item.date.replace(/-/g, ''),
+      bookdate: item.date,
+      series_id: '0',
+      access: '3',
+      booktime: `${item.startTime}:00`,
+      booklength: item.durationHours.toString(),
+      'sheet[]': ({ 'A': '1', 'B': '2', 'C': '3', 'D': '4' } as const)[item.track],
+      comment: 'BanbokningMirror'
+    };
+
+    for (const [key, value] of Object.entries(fields)) {
+      const input = document.createElement('input');
+      input.type = 'hidden';
+      input.name = key;
+      input.value = value as string;
+      form.appendChild(input);
+    }
+
+    document.body.appendChild(form);
+    form.submit();
+    document.body.removeChild(form);
+  };
+
+  const bookAll = () => {
+    cart.forEach((item, i) => {
+      setTimeout(() => openBookingTab(item), i * 400);
+    });
+    setTimeout(() => clearCart(), cart.length * 400 + 1000);
   };
 
   const filteredData = useMemo(() => {
@@ -609,6 +706,7 @@ export default function CalendarClient({ initialData }: Props) {
                                                 if (info.available) {
                                                   const isSelecting = bookingData?.track === track && bookingData?.date === selectedBlock.date;
                                                   const isSelected = isSelecting && slot.time >= bookingData.time && slot.time < addMinutes(bookingData.time, bookingData.maxDurationHours * 60);
+                                                  const inCart = isInCart(selectedBlock.date, track, slot.time);
 
                                                   return (
                                                     <div
@@ -619,7 +717,11 @@ export default function CalendarClient({ initialData }: Props) {
                                                       <div
                                                         className="w-full aspect-square rounded transition-all flex items-center justify-center cursor-pointer hover:bg-slate-100"
                                                         onClick={() => {
-                                                          if (!isSelecting) {
+                                                          if (inCart) {
+                                                            // Remove from cart
+                                                            const item = cart.find(c => c.date === selectedBlock.date && c.track === track && c.startTime === slot.time);
+                                                            if (item) removeFromCart(item.id);
+                                                          } else if (!isSelecting) {
                                                             // First click - initialize selection
                                                             setBookingData({
                                                               date: selectedBlock.date,
@@ -647,11 +749,18 @@ export default function CalendarClient({ initialData }: Props) {
                                                           }
                                                         }}
                                                       >
-                                                        <div className={`w-full h-full rounded transition-all flex items-center justify-center ${isSelected ? 'bg-emerald-500 shadow-sm border border-emerald-600' : 'bg-white border border-slate-200 hover:border-emerald-300'}`}>
-                                                          {isSelected && <span className="text-white font-black text-[10px]">✓</span>}
+                                                        <div className={`w-full h-full rounded transition-all flex items-center justify-center ${
+                                                          inCart 
+                                                            ? 'bg-emerald-100 border-2 border-emerald-500' 
+                                                            : isSelected 
+                                                              ? 'bg-emerald-500 shadow-sm border border-emerald-600' 
+                                                              : 'bg-white border border-slate-200 hover:border-emerald-300'
+                                                        }`}>
+                                                          {inCart && <span className="text-emerald-600 font-black text-[10px]">✓</span>}
+                                                          {!inCart && isSelected && <span className="text-white font-black text-[10px]">✓</span>}
                                                         </div>
                                                       </div>
-                                                      <span className="text-[8px] font-bold text-slate-500 mt-0.5">{slot.time}</span>
+                                                      <span className={`text-[8px] font-bold mt-0.5 ${inCart ? 'text-emerald-600' : 'text-slate-500'}`}>{slot.time}</span>
                                                     </div>
                                                   );
                                                 }
@@ -703,12 +812,46 @@ export default function CalendarClient({ initialData }: Props) {
                                           ))}
                                         </div>
                                       );
-                                    })()}
-                                  </div>
-                                </div>
-                             </div>
-                          </div>
-                        )}
+                                     })()}
+                                   </div>
+                                 </div>
+                                 
+                                 {/* Add to Cart Button */}
+                                 {bookingData && bookingData.date === selectedBlock.date && (
+                                   <div className="px-4 py-3 bg-slate-50 border-t border-slate-200 flex items-center justify-between">
+                                     <div className="flex items-center gap-2">
+                                       <span className="font-bold text-slate-700">Bana {bookingData.track}</span>
+                                       <span className="text-slate-400">•</span>
+                                       <span className="font-black text-slate-900">{bookingData.time} - {addMinutes(bookingData.time, bookingData.maxDurationHours * 60)} ({bookingData.maxDurationHours}t)</span>
+                                     </div>
+                                     <div className="flex items-center gap-2">
+                                       <button
+                                         onClick={() => setBookingData(null)}
+                                         className="px-3 py-2 rounded-lg text-slate-500 hover:bg-slate-200 font-bold text-sm transition-colors"
+                                       >
+                                         Avbryt
+                                       </button>
+                                       <button
+                                         onClick={() => {
+                                           addToCart({
+                                             date: bookingData.date,
+                                             track: bookingData.track,
+                                             startTime: bookingData.time,
+                                             endTime: addMinutes(bookingData.time, bookingData.maxDurationHours * 60),
+                                             durationHours: bookingData.maxDurationHours
+                                           });
+                                           setBookingData(null);
+                                         }}
+                                         className="bg-emerald-500 hover:bg-emerald-600 text-white px-4 py-2 rounded-lg font-black text-sm shadow-sm transition-transform active:scale-95"
+                                       >
+                                         Lägg till i varukorg
+                                       </button>
+                                     </div>
+                                   </div>
+                                 )}
+                              </div>
+                           </div>
+                         )}
                       </div>
                     ))}
                   </div>
@@ -772,63 +915,113 @@ export default function CalendarClient({ initialData }: Props) {
         </div>
       )}
 
-      {/* Fixed Action Bar Overlay for Inline Selection */}
-      {bookingData && (
-        <div className="fixed bottom-6 left-1/2 -translate-x-1/2 z-[60] animate-in slide-in-from-bottom-8 duration-300">
-          <div className="bg-slate-900 text-white p-3 rounded-2xl shadow-2xl flex items-center gap-4 w-max border border-slate-700">
-            <div className="flex flex-col pl-2">
-              <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Bana {bookingData.track} • {bookingData.date}</span>
-              <span className="text-base font-black">{bookingData.time} ({bookingData.maxDurationHours} timmar)</span>
+      {/* Fixed Cart Button - Bottom Right */}
+      <div className="fixed bottom-6 right-6 z-50">
+        <button
+          onClick={() => setIsCartOpen(true)}
+          className="relative bg-slate-900 hover:bg-slate-800 text-white p-4 rounded-2xl shadow-2xl flex items-center gap-3 transition-transform hover:scale-105 active:scale-95 border border-slate-700"
+        >
+          <ShoppingCart size={24} />
+          {cart.length > 0 && (
+            <span className="absolute -top-2 -right-2 bg-emerald-500 text-white text-xs font-black w-6 h-6 rounded-full flex items-center justify-center">
+              {cart.length}
+            </span>
+          )}
+          <span className="font-bold text-sm hidden sm:inline">
+            {cart.length === 0 ? 'Varukorg' : `${cart.length} bokningar`}
+          </span>
+        </button>
+      </div>
+
+      {/* Cart Modal */}
+      {isCartOpen && (
+        <div
+          className="fixed inset-0 z-[70] flex items-center justify-center bg-slate-900/60 backdrop-blur-sm p-4"
+          onClick={() => setIsCartOpen(false)}
+        >
+          <div
+            className="bg-white w-full max-w-lg rounded-2xl shadow-2xl flex flex-col max-h-[80vh]"
+            onClick={e => e.stopPropagation()}
+          >
+            {/* Header */}
+            <div className="px-6 py-4 border-b border-slate-100 flex justify-between items-center">
+              <h3 className="font-black text-xl text-slate-900 flex items-center gap-2">
+                <ShoppingCart size={24} className="text-emerald-600" />
+                Din varukorg ({cart.length})
+              </h3>
+              <button
+                onClick={() => setIsCartOpen(false)}
+                className="p-2 hover:bg-slate-100 rounded-full text-slate-500 transition-colors"
+              >
+                <X size={20} />
+              </button>
             </div>
-            
-            <button 
-              onClick={(e) => {
-                e.stopPropagation();
-                // Open the final native form in a new tab using a hidden form submission
-                const form = document.createElement('form');
-                form.method = 'POST';
-                form.action = 'https://www.banbokning.se/sundbyberg/book.php';
-                form.target = '_blank';
-                
-                const fields = {
-                  update_id: '0',
-                  date: bookingData.date.replace(/-/g, ''),
-                  bookdate: bookingData.date,
-                  series_id: '0',
-                  access: '3',
-                  booktime: `${bookingData.time}:00`,
-                  booklength: bookingData.maxDurationHours.toString(),
-                  'sheet[]': { 'A': '1', 'B': '2', 'C': '3', 'D': '4' }[bookingData.track],
-                  comment: 'BanbokningMirror'
-                };
-                
-                for (const [key, value] of Object.entries(fields)) {
-                  const input = document.createElement('input');
-                  input.type = 'hidden';
-                  input.name = key;
-                  input.value = value as string;
-                  form.appendChild(input);
-                }
-                
-                document.body.appendChild(form);
-                form.submit();
-                document.body.removeChild(form);
-                setBookingData(null);
-              }}
-              className="bg-emerald-500 hover:bg-emerald-600 text-white px-6 py-2.5 rounded-xl text-sm font-black shadow-sm transition-transform active:scale-95 ml-2"
-            >
-              Fortsätt
-            </button>
-            <button 
-              onClick={(e) => {
-                e.stopPropagation();
-                setBookingData(null);
-              }}
-              className="p-2.5 hover:bg-slate-800 rounded-xl text-slate-400 hover:text-white transition-colors border border-transparent hover:border-slate-700"
-              aria-label="Avbryt"
-            >
-              <X size={20} />
-            </button>
+
+            {/* Cart Items */}
+            <div className="flex-1 overflow-y-auto p-6">
+              {cart.length === 0 ? (
+                <div className="text-center py-12 text-slate-400">
+                  <ShoppingCart size={48} className="mx-auto mb-4 opacity-50" />
+                  <p className="font-medium">Din varukorg är tom</p>
+                  <p className="text-sm mt-1">Välj tider och lägg till i varukorgen</p>
+                </div>
+              ) : (
+                <div className="space-y-3">
+                  {cart.map(item => (
+                    <div
+                      key={item.id}
+                      className="bg-slate-50 rounded-xl p-4 border border-slate-200"
+                    >
+                      <div className="flex items-center justify-between mb-2">
+                        <div className="flex items-center gap-2">
+                          <span className="font-black text-lg text-blue-600">{item.track}</span>
+                          <span className="text-slate-400">•</span>
+                          <span className="font-bold text-slate-700">{item.date}</span>
+                        </div>
+                        <button
+                          onClick={() => removeFromCart(item.id)}
+                          className="p-2 hover:bg-rose-100 hover:text-rose-600 rounded-lg text-slate-400 transition-colors"
+                        >
+                          <Trash2 size={16} />
+                        </button>
+                      </div>
+                      <div className="font-bold text-slate-900">
+                        {item.startTime} - {item.endTime}
+                        <span className="text-slate-500 font-normal ml-2">
+                          ({item.durationHours}t)
+                        </span>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+
+            {/* Footer */}
+            {cart.length > 0 && (
+              <div className="px-6 py-4 border-t border-slate-100 bg-slate-50 rounded-b-2xl">
+                <div className="flex items-center justify-between mb-4 text-sm text-slate-600">
+                  <span>{cart.length} bokningar</span>
+                  <span className="font-bold">
+                    {cart.reduce((sum, item) => sum + item.durationHours, 0)} timmar totalt
+                  </span>
+                </div>
+                <div className="flex gap-3">
+                  <button
+                    onClick={clearCart}
+                    className="flex-1 px-4 py-3 rounded-xl font-bold text-slate-600 hover:bg-slate-200 transition-colors border border-slate-300"
+                  >
+                    Töm varukorg
+                  </button>
+                  <button
+                    onClick={bookAll}
+                    className="flex-[2] bg-emerald-500 hover:bg-emerald-600 text-white px-4 py-3 rounded-xl font-black shadow-sm transition-transform active:scale-95"
+                  >
+                    Boka alla
+                  </button>
+                </div>
+              </div>
+            )}
           </div>
         </div>
       )}
