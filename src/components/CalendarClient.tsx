@@ -151,6 +151,151 @@ const GRADE_COLORS: Record<Grade, { block: string, icon: string, badge: string }
   }
 };
 
+function BookingForm({ bookingData, onClose }: { bookingData: any, onClose: () => void }) {
+  // Generate all possible 30-min slots in this available block
+  const slots: string[] = [];
+  let current = bookingData.time;
+  for (let i = 0; i <= bookingData.maxDurationHours * 2; i++) {
+    slots.push(current);
+    current = addMinutes(current, 30);
+  }
+
+  const [startIndex, setStartIndex] = useState(0);
+  const [endIndex, setEndIndex] = useState(slots.length - 1);
+
+  const startTime = slots[startIndex];
+  const endTime = slots[endIndex];
+  const lengthHours = (endIndex - startIndex) * 0.5;
+
+  return (
+    <div 
+      className="fixed inset-0 z-[60] flex items-end sm:items-center justify-center bg-slate-900/60 backdrop-blur-sm p-0 sm:p-6"
+      onClick={onClose}
+    >
+      <div 
+        className="bg-white w-full sm:max-w-md rounded-t-3xl sm:rounded-2xl shadow-2xl flex flex-col overflow-hidden animate-in slide-in-from-bottom-full sm:slide-in-from-bottom-0 sm:zoom-in-95 duration-200"
+        onClick={e => e.stopPropagation()}
+      >
+        <div className="px-6 py-4 border-b border-slate-100 flex justify-between items-center bg-slate-50">
+          <h3 className="font-black text-lg text-slate-900 flex items-center gap-2">
+            Slutför Bokning
+          </h3>
+          <button 
+            onClick={onClose} 
+            className="p-1.5 hover:bg-slate-200 rounded-full text-slate-500 transition-colors"
+          >
+             <X size={20} />
+          </button>
+        </div>
+        
+        <div className="p-6 bg-white">
+          <form action="https://www.banbokning.se/sundbyberg/book.php" method="POST" target="_blank" onSubmit={() => setTimeout(onClose, 100)}>
+            {/* Hidden Fields for backend compatibility */}
+            <input type="hidden" name="update_id" value="0" />
+            <input type="hidden" name="date" value={bookingData.date.replace(/-/g, '')} />
+            <input type="hidden" name="bookdate" value={bookingData.date} />
+            <input type="hidden" name="series_id" value="0" />
+            <input type="hidden" name="access" value="3" />
+            <input type="hidden" name="booktime" value={`${startTime}:00`} />
+            <input type="hidden" name="booklength" value={lengthHours} />
+            <input type="hidden" name="sheet[]" value={{ 'A': 1, 'B': 2, 'C': 3, 'D': 4 }[bookingData.track as 'A' | 'B' | 'C' | 'D']} />
+
+            <div className="space-y-6">
+              <div className="flex items-center justify-between">
+                 <div>
+                   <div className="text-xs font-bold text-slate-400 uppercase tracking-wider">Datum</div>
+                   <div className="font-black text-slate-900 text-lg">{bookingData.date}</div>
+                 </div>
+                 <div className="text-right">
+                   <div className="text-xs font-bold text-slate-400 uppercase tracking-wider">Bana</div>
+                   <div className="font-black text-blue-600 text-2xl leading-none">{bookingData.track}</div>
+                 </div>
+              </div>
+
+              <div>
+                <label className="block text-sm font-bold text-slate-700 mb-3">Välj tid (Start & Slut)</label>
+                <div className="bg-slate-50 rounded-2xl p-4 border border-slate-200">
+                  <div className="flex items-center gap-4">
+                    <div className="flex-1">
+                      <label className="text-xs font-bold text-slate-400 uppercase block mb-1">Starttid</label>
+                      <select 
+                        value={startIndex}
+                        onChange={(e) => {
+                          const val = Number(e.target.value);
+                          setStartIndex(val);
+                          if (val >= endIndex) setEndIndex(val + 1);
+                        }}
+                        className="w-full bg-white border border-slate-300 rounded-xl px-3 py-2 text-base font-bold text-slate-700 outline-none focus:ring-2 focus:ring-blue-500 appearance-none"
+                      >
+                        {slots.slice(0, -1).map((t, i) => (
+                          <option key={`start-${i}`} value={i}>{t}</option>
+                        ))}
+                      </select>
+                    </div>
+                    <div className="text-slate-300 font-black mt-4">
+                      <ChevronRight size={20} />
+                    </div>
+                    <div className="flex-1">
+                      <label className="text-xs font-bold text-slate-400 uppercase block mb-1">Sluttid</label>
+                      <select 
+                        value={endIndex}
+                        onChange={(e) => {
+                          const val = Number(e.target.value);
+                          setEndIndex(val);
+                          if (val <= startIndex) setStartIndex(val - 1);
+                        }}
+                        className="w-full bg-white border border-slate-300 rounded-xl px-3 py-2 text-base font-bold text-slate-700 outline-none focus:ring-2 focus:ring-blue-500 appearance-none"
+                      >
+                        {slots.slice(1).map((t, i) => {
+                          const actualIndex = i + 1;
+                          return (
+                            <option key={`end-${actualIndex}`} value={actualIndex} disabled={actualIndex <= startIndex}>
+                              {t}
+                            </option>
+                          );
+                        })}
+                      </select>
+                    </div>
+                  </div>
+                  <div className="mt-3 text-center">
+                     <span className="inline-block bg-blue-100 text-blue-800 font-bold text-xs px-3 py-1 rounded-full">
+                       Totalt: {lengthHours} timmar
+                     </span>
+                  </div>
+                </div>
+              </div>
+
+              <div>
+                <label className="block text-sm font-bold text-slate-700 mb-1.5">Information / Anteckning</label>
+                <input 
+                  type="text" 
+                  name="comment" 
+                  defaultValue="" 
+                  placeholder="Skriv din anteckning här..."
+                  className="w-full border border-slate-300 rounded-xl px-4 py-3 text-base text-slate-700 outline-none focus:ring-2 focus:ring-blue-500 bg-white"
+                />
+              </div>
+
+              <div className="pt-2">
+                <button 
+                  type="submit"
+                  className="w-full bg-blue-600 hover:bg-blue-700 text-white font-black text-lg py-3.5 rounded-xl shadow-sm transition-all hover:shadow-md hover:-translate-y-0.5 active:translate-y-0 disabled:opacity-50 disabled:pointer-events-none"
+                  disabled={lengthHours <= 0}
+                >
+                  Boka {lengthHours > 0 ? `${lengthHours}h` : ''}
+                </button>
+                <p className="text-center text-xs font-medium text-slate-400 mt-3">
+                  Öppnas säkert i en ny flik. <br/>Kräver att du är inloggad på Banbokning.se.
+                </p>
+              </div>
+            </div>
+          </form>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 export default function CalendarClient({ initialData }: Props) {
   const router = useRouter();
   const [data] = useState<DaySchedule[]>(initialData);
@@ -164,6 +309,12 @@ export default function CalendarClient({ initialData }: Props) {
   const [selectedBlock, setSelectedBlock] = useState<Block | null>(null);
   const [isConfigOpen, setIsConfigOpen] = useState(false);
   const [configJson, setConfigJson] = useState('');
+  const [bookingData, setBookingData] = useState<{
+    date: string;
+    time: string;
+    track: 'A' | 'B' | 'C' | 'D';
+    maxDurationHours: number;
+  } | null>(null);
 
   const activePersona = useMemo(() => personas.find(p => p.id === activePersonaId) || personas[0], [activePersonaId, personas]);
 
@@ -553,6 +704,8 @@ export default function CalendarClient({ initialData }: Props) {
                                                 else if (info.text.toLowerCase().includes('uthyrning')) bgColor = 'bg-amber-100/60 text-amber-900';
 
                                                 if (info.available) {
+                                                  const isSelecting = bookingData?.track === track && bookingData?.date === selectedBlock.date;
+                                                  const isSelected = isSelecting && slot.time >= bookingData.time && slot.time < addMinutes(bookingData.time, bookingData.maxDurationHours * 60);
                                                   const inCart = isInCart(selectedBlock.date, track, slot.time);
 
                                                   return (
@@ -561,31 +714,55 @@ export default function CalendarClient({ initialData }: Props) {
                                                       className="shrink-0 flex flex-col items-center p-0.5 border-r border-slate-200/50"
                                                       style={{ width: '3rem' }}
                                                     >
-                                                      <button
-                                                        className={`w-8 h-8 rounded transition-all flex items-center justify-center ${
-                                                          inCart 
-                                                            ? 'bg-emerald-100 border-2 border-emerald-500 text-emerald-600' 
-                                                            : 'bg-white border border-slate-200 hover:border-emerald-300 hover:bg-emerald-50'
-                                                        }`}
+                                                      <div
+                                                        className="w-full aspect-square rounded transition-all flex items-center justify-center cursor-pointer hover:bg-slate-100"
                                                         onClick={() => {
                                                           if (inCart) {
                                                             // Remove from cart
                                                             const item = cart.find(c => c.date === selectedBlock.date && c.track === track && c.startTime === slot.time);
                                                             if (item) removeFromCart(item.id);
-                                                          } else {
-                                                            // Add to cart
-                                                            addToCart({
+                                                          } else if (!isSelecting) {
+                                                            // First click - initialize selection
+                                                            setBookingData({
                                                               date: selectedBlock.date,
+                                                              time: slot.time,
                                                               track: track,
-                                                              startTime: slot.time,
-                                                              durationHours: 0.5,
-                                                              endTime: addMinutes(slot.time, 30)
+                                                              maxDurationHours: 0.5
                                                             });
+                                                          } else if (isSelected) {
+                                                            // Click on selected slot - add to cart and clear
+                                                            addToCart({
+                                                              date: bookingData.date,
+                                                              track: bookingData.track,
+                                                              startTime: bookingData.time,
+                                                              endTime: addMinutes(bookingData.time, bookingData.maxDurationHours * 60),
+                                                              durationHours: bookingData.maxDurationHours
+                                                            });
+                                                            setBookingData(null);
+                                                          } else {
+                                                            // Click on unselected slot - try to expand
+                                                            if (slot.time === addMinutes(bookingData.time, bookingData.maxDurationHours * 60)) {
+                                                              setBookingData({ ...bookingData, maxDurationHours: bookingData.maxDurationHours + 0.5 });
+                                                            } else if (addMinutes(slot.time, 30) === bookingData.time) {
+                                                              setBookingData({ ...bookingData, time: slot.time, maxDurationHours: bookingData.maxDurationHours + 0.5 });
+                                                            } else {
+                                                              // New selection starting from this slot
+                                                              setBookingData({ ...bookingData, time: slot.time, maxDurationHours: 0.5 });
+                                                            }
                                                           }
                                                         }}
                                                       >
-                                                        {inCart && <span className="font-black text-[10px]">✓</span>}
-                                                      </button>
+                                                        <div className={`w-full h-full rounded transition-all flex items-center justify-center ${
+                                                          inCart 
+                                                            ? 'bg-emerald-100 border-2 border-emerald-500' 
+                                                            : isSelected 
+                                                              ? 'bg-emerald-500 shadow-sm border border-emerald-600' 
+                                                              : 'bg-white border border-slate-200 hover:border-emerald-300'
+                                                        }`}>
+                                                          {inCart && <span className="text-emerald-600 font-black text-[10px]">✓</span>}
+                                                          {!inCart && isSelected && <span className="text-white font-black text-[10px]">✓</span>}
+                                                        </div>
+                                                      </div>
                                                       <span className={`text-[8px] font-bold mt-0.5 ${inCart ? 'text-emerald-600' : 'text-slate-500'}`}>{slot.time}</span>
                                                     </div>
                                                   );
@@ -641,7 +818,24 @@ export default function CalendarClient({ initialData }: Props) {
                                      })()}
                                    </div>
                                  </div>
-                               </div>
+                                 
+                                 {/* Add to Cart Button */}
+                                  {bookingData && bookingData.date === selectedBlock.date && (
+                                    <div className="px-4 py-3 bg-slate-50 border-t border-slate-200 flex items-center justify-between">
+                                      <div className="flex items-center gap-2">
+                                        <span className="font-bold text-slate-700">Bana {bookingData.track}</span>
+                                        <span className="text-slate-400">•</span>
+                                        <span className="font-black text-slate-900">{bookingData.time} - {addMinutes(bookingData.time, bookingData.maxDurationHours * 60)} ({bookingData.maxDurationHours}t)</span>
+                                      </div>
+                                      <button
+                                        onClick={() => setBookingData(null)}
+                                        className="px-3 py-2 rounded-lg text-slate-500 hover:bg-slate-200 font-bold text-sm transition-colors"
+                                      >
+                                        Avbryt
+                                      </button>
+                                    </div>
+                                  )}
+                              </div>
                            </div>
                          )}
                       </div>
