@@ -169,6 +169,7 @@ export default function CalendarClient({ initialData }: Props) {
   const [selectedBlock, setSelectedBlock] = useState<Block | null>(null);
   const [isConfigOpen, setIsConfigOpen] = useState(false);
   const [configJson, setConfigJson] = useState('');
+  const [isUpcomingOpen, setIsUpcomingOpen] = useState(true);
 
   const activePersona = useMemo(() => personas.find(p => p.id === activePersonaId) || personas[0], [activePersonaId, personas]);
 
@@ -522,6 +523,67 @@ export default function CalendarClient({ initialData }: Props) {
     });
   };
 
+  // Extract specific user bookings
+  const targetBookings = useMemo(() => {
+    const found: Array<{ date: string, startTime: string, endTime: string, track: string, name: string, style: string }> = [];
+    const now = new Date();
+    // Use sv-SE to get local Swedish date YYYY-MM-DD
+    const currentYMD = now.toLocaleDateString('sv-SE').split(' ')[0];
+    const currentHM = now.toLocaleTimeString('sv-SE', { hour: '2-digit', minute: '2-digit' });
+    
+    data.forEach(day => {
+      let currentBlocks: Record<string, { startTime: string, endTime: string, track: string, name: string, style: string }> = {};
+      
+      day.slots.forEach((slot, index) => {
+        ['A', 'B', 'C', 'D'].forEach(track => {
+          const t = track as 'A' | 'B' | 'C' | 'D';
+          const info = slot.trackInfo[t];
+          const textLower = info.text ? info.text.toLowerCase() : '';
+          
+          const isTarget = !info.available && info.text && (
+            textLower.includes("westerberg") ||
+            textLower.includes("westerboyz") ||
+            textLower.includes("winge")
+          ) && !textLower.includes("westerberg d ä") && !textLower.includes("runnqvist");
+          
+          if (isTarget) {
+            if (currentBlocks[t] && currentBlocks[t].name === info.text && currentBlocks[t].endTime === slot.time) {
+              currentBlocks[t].endTime = addMinutes(slot.time, 30);
+            } else {
+              if (currentBlocks[t]) {
+                found.push({ date: day.date, ...currentBlocks[t] });
+              }
+              currentBlocks[t] = { startTime: slot.time, endTime: addMinutes(slot.time, 30), track: t, name: info.text, style: info.style };
+            }
+          } else {
+            if (currentBlocks[t]) {
+              found.push({ date: day.date, ...currentBlocks[t] });
+              delete currentBlocks[t];
+            }
+          }
+        });
+
+        // Handle end of day
+        if (index === day.slots.length - 1) {
+          Object.values(currentBlocks).forEach(block => {
+            found.push({ date: day.date, ...block });
+          });
+          currentBlocks = {};
+        }
+      });
+    });
+    
+    return found.filter(b => {
+      if (b.date < currentYMD) return false;
+      if (b.date === currentYMD && b.endTime <= currentHM) return false;
+      return true;
+    }).sort((a, b) => {
+      if (a.date !== b.date) return a.date.localeCompare(b.date);
+      if (a.startTime !== b.startTime) return a.startTime.localeCompare(b.startTime);
+      return a.track.localeCompare(b.track);
+    });
+  }, [data]);
+
   return (
     <div className="min-h-screen bg-[#f8fafc] pb-12 font-sans relative">
       <main className="max-w-3xl mx-auto px-4 py-6">
@@ -636,6 +698,59 @@ export default function CalendarClient({ initialData }: Props) {
             </div>
           </div>
         </div>
+
+        {/* Specific User Bookings */}
+        {targetBookings.length > 0 && (
+          <div className="bg-white rounded-2xl shadow-sm border border-emerald-200 overflow-hidden mb-8">
+            <button
+              onClick={() => setIsUpcomingOpen(!isUpcomingOpen)}
+              className="w-full flex items-center justify-between p-4 bg-emerald-50 hover:bg-emerald-100/50 transition-colors"
+            >
+              <h2 className="text-sm font-bold text-emerald-700 uppercase tracking-wider flex items-center gap-2">
+                <Clock size={16} /> Kommande bokningar ({targetBookings.length})
+              </h2>
+              <div className={`text-emerald-600 transition-transform duration-300 ${isUpcomingOpen ? 'rotate-180' : ''}`}>
+                <ChevronDown size={20} />
+              </div>
+            </button>
+            
+            {isUpcomingOpen && (
+              <div className="p-4 pt-2 border-t border-emerald-100 bg-white">
+                <div className="grid gap-3 sm:grid-cols-2">
+                  {targetBookings.map((b, i) => {
+                    const styleKey = b.style.includes('style_') ? b.style.split(' ')[0] : 'default';
+                    const palette = BANBOKNING_STYLES[styleKey] || BANBOKNING_STYLES.default;
+                    
+                    return (
+                      <div key={i} className="flex flex-col rounded-xl overflow-hidden shadow-sm border border-slate-200/60" style={{ backgroundColor: palette.bg }}>
+                        <div 
+                          className="flex items-center justify-between px-3 py-1.5"
+                          style={{ backgroundColor: palette.header }}
+                        >
+                          <span className="font-black text-white text-xs capitalize">
+                            {new Date(b.date).toLocaleDateString('sv-SE', { weekday: 'short', month: 'short', day: 'numeric' })}
+                          </span>
+                          <span className="text-[10px] font-black px-1.5 py-0.5 rounded bg-white/20 text-white">
+                            Bana {b.track}
+                          </span>
+                        </div>
+                        <div className="p-3" style={{ color: palette.text }}>
+                          <div className="flex items-center gap-2 mb-1.5">
+                            <Clock size={14} className="opacity-70" />
+                            <span className="font-bold text-sm">{b.startTime} - {b.endTime}</span>
+                          </div>
+                          <div className="text-xs font-semibold opacity-90 truncate" title={b.name}>
+                            {b.name}
+                          </div>
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+            )}
+          </div>
+        )}
 
         {/* Results */}
         <div className="space-y-8">
