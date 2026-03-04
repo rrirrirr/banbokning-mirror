@@ -706,7 +706,6 @@ export default function CalendarClient({ initialData }: Props) {
                                                 if (info.available) {
                                                   const isSelecting = bookingData?.track === track && bookingData?.date === selectedBlock.date;
                                                   const isSelected = isSelecting && slot.time >= bookingData.time && slot.time < addMinutes(bookingData.time, bookingData.maxDurationHours * 60);
-                                                  const inCart = isInCart(selectedBlock.date, track, slot.time);
 
                                                   return (
                                                     <div
@@ -717,11 +716,7 @@ export default function CalendarClient({ initialData }: Props) {
                                                       <div
                                                         className="w-full aspect-square rounded transition-all flex items-center justify-center cursor-pointer hover:bg-slate-100"
                                                         onClick={() => {
-                                                          if (inCart) {
-                                                            // Remove from cart
-                                                            const item = cart.find(c => c.date === selectedBlock.date && c.track === track && c.startTime === slot.time);
-                                                            if (item) removeFromCart(item.id);
-                                                          } else if (!isSelecting) {
+                                                          if (!isSelecting) {
                                                             // First click - initialize selection
                                                             setBookingData({
                                                               date: selectedBlock.date,
@@ -753,17 +748,14 @@ export default function CalendarClient({ initialData }: Props) {
                                                         }}
                                                       >
                                                         <div className={`w-full h-full rounded transition-all flex items-center justify-center ${
-                                                          inCart 
-                                                            ? 'bg-emerald-100 border-2 border-emerald-500' 
-                                                            : isSelected 
-                                                              ? 'bg-emerald-500 shadow-sm border border-emerald-600' 
-                                                              : 'bg-white border border-slate-200 hover:border-emerald-300'
+                                                          isSelected 
+                                                            ? 'bg-emerald-500 shadow-sm border border-emerald-600' 
+                                                            : 'bg-white border border-slate-200 hover:border-emerald-300'
                                                         }`}>
-                                                          {inCart && <span className="text-emerald-600 font-black text-[10px]">✓</span>}
-                                                          {!inCart && isSelected && <span className="text-white font-black text-[10px]">✓</span>}
+                                                          {isSelected && <span className="text-white font-black text-[10px]">✓</span>}
                                                         </div>
                                                       </div>
-                                                      <span className={`text-[8px] font-bold mt-0.5 ${inCart ? 'text-emerald-600' : 'text-slate-500'}`}>{slot.time}</span>
+                                                      <span className="text-[8px] font-bold text-slate-500 mt-0.5">{slot.time}</span>
                                                     </div>
                                                   );
                                                 }
