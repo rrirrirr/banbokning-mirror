@@ -27,7 +27,7 @@ interface Persona {
 const INITIAL_PERSONAS: Persona[] = [
   {
     id: 'none',
-    name: 'No Preset',
+    name: 'Ingen förinställning',
     rules: []
   },
   {
@@ -159,8 +159,8 @@ export default function CalendarClient({ initialData }: Props) {
   // Filters State
   const [personas, setPersonas] = useState<Persona[]>(INITIAL_PERSONAS);
   const [activePersonaId, setActivePersonaId] = useState<string>('mans');
-  const [minGrade, setMinGrade] = useState<Grade>('E');
-  
+  const [minGrade, setMinGrade] = useState<Grade>('B');
+
   const [selectedBlock, setSelectedBlock] = useState<Block | null>(null);
   const [isConfigOpen, setIsConfigOpen] = useState(false);
   const [configJson, setConfigJson] = useState('');
@@ -184,7 +184,7 @@ export default function CalendarClient({ initialData }: Props) {
       setPersonas(parsed);
       setIsConfigOpen(false);
     } catch (e) {
-      alert("Invalid JSON format. Please check your syntax.");
+      alert("Ogiltigt JSON-format. Kontrollera din syntax.");
     }
   };
 
@@ -208,6 +208,27 @@ export default function CalendarClient({ initialData }: Props) {
   useEffect(() => {
     localStorage.setItem('banbokning-cart-v1', JSON.stringify(cart));
   }, [cart]);
+
+  // Load filter settings from localStorage on mount
+  useEffect(() => {
+    const savedPersonaId = localStorage.getItem('banbokning-active-persona-v1');
+    if (savedPersonaId) {
+      setActivePersonaId(savedPersonaId);
+    }
+    const savedMinGrade = localStorage.getItem('banbokning-min-grade-v1') as Grade;
+    if (savedMinGrade && ['A', 'B', 'C', 'D', 'E'].includes(savedMinGrade)) {
+      setMinGrade(savedMinGrade);
+    }
+  }, []);
+
+  // Save filter settings to localStorage when they change
+  useEffect(() => {
+    localStorage.setItem('banbokning-active-persona-v1', activePersonaId);
+  }, [activePersonaId]);
+
+  useEffect(() => {
+    localStorage.setItem('banbokning-min-grade-v1', minGrade);
+  }, [minGrade]);
 
   // Cart helper functions
   const generateId = () => `${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
@@ -399,7 +420,7 @@ export default function CalendarClient({ initialData }: Props) {
             className="flex items-center gap-2 text-sm font-bold text-slate-700 bg-white px-4 py-2 rounded-xl shadow-sm border border-slate-200 hover:bg-slate-50 transition-all disabled:opacity-50"
           >
             <RefreshCw size={16} className={isRefreshing ? "animate-spin" : ""} />
-            Sync Calendar
+            Synkronisera kalender
           </button>
         </div>
 
@@ -410,7 +431,7 @@ export default function CalendarClient({ initialData }: Props) {
             <div className="flex flex-col md:flex-row gap-6 items-start">
               <div className="flex-1 w-full">
                 <label className="text-xs font-bold text-slate-400 uppercase tracking-wider mb-3 flex items-center gap-1.5">
-                  <UserCircle2 size={14} /> Time Preset (Persona)
+                  <UserCircle2 size={14} /> Tidspreset (Persona)
                 </label>
                 <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3">
                   <div className="relative flex-1">
@@ -431,14 +452,14 @@ export default function CalendarClient({ initialData }: Props) {
                     onClick={openConfig}
                     className="shrink-0 flex items-center justify-center gap-2 bg-slate-100 hover:bg-slate-200 text-slate-700 px-4 py-2.5 rounded-xl text-sm font-bold transition-colors border border-slate-200"
                   >
-                    <Settings size={16} /> Configure
+                    <Settings size={16} /> Konfigurera
                   </button>
                 </div>
               </div>
 
               {activePersonaId !== 'none' && (
                 <div className="md:w-48 shrink-0">
-                  <label className="text-xs font-bold text-slate-400 uppercase tracking-wider mb-3 block">Minimum Grade</label>
+                  <label className="text-xs font-bold text-slate-400 uppercase tracking-wider mb-3 block">Minsta betyg</label>
                   <div className="flex flex-wrap gap-1.5">
                     {allGrades.map((grade) => {
                       const gradeValue: Record<Grade, number> = { A: 5, B: 4, C: 3, D: 2, E: 1, None: 0 };
@@ -472,8 +493,8 @@ export default function CalendarClient({ initialData }: Props) {
               <div className="bg-slate-50 p-4 rounded-full mb-4">
                 <CalendarIcon size={32} className="text-slate-400" />
               </div>
-              <h3 className="text-xl font-bold text-slate-900">No available times</h3>
-              <p className="text-slate-500 mt-2 font-medium">Try adjusting your filters or checking another week.</p>
+              <h3 className="text-xl font-bold text-slate-900">Inga tillgängliga tider</h3>
+              <p className="text-slate-500 mt-2 font-medium">Försök att justera dina filter eller kontrollera en annan vecka.</p>
             </div>
           ) : (
             filteredData.map((day) => {
@@ -484,7 +505,7 @@ export default function CalendarClient({ initialData }: Props) {
                 <div key={day.date} className="relative pt-2 pb-4">
                   <div className="sticky top-0 z-40 bg-[#f8fafc]/95 backdrop-blur-md py-3 -mx-4 px-4 mb-3 border-b border-slate-200 shadow-sm flex items-center justify-between">
                     <h2 className="font-black text-slate-900 text-lg tracking-tight">
-                      {new Date(day.date).toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric' })}
+                      {new Date(day.date).toLocaleDateString('sv-SE', { weekday: 'long', month: 'long', day: 'numeric' })}
                     </h2>
                   </div>
                   
@@ -503,18 +524,46 @@ export default function CalendarClient({ initialData }: Props) {
                               <Clock size={24} />
                             </div>
                             <div>
-                              <div className="flex items-center gap-2">
-                                <div className="font-black text-slate-900 text-xl tracking-tight">
-                                  {b.start} <span className="text-slate-400 font-medium px-1 text-lg">to</span> {b.end}
-                                </div>
-                                {b.grade !== 'None' && (
-                                  <span className={`px-2 py-0.5 rounded text-xs font-black uppercase ${GRADE_COLORS[b.grade].badge}`}>
-                                    Grade {b.grade}
-                                  </span>
-                                )}
+                              <div className="flex flex-col items-start justify-center">
+                                {(() => {
+                                  const lastSlotTime = b.slots[b.slots.length - 1].time;
+                                  const startHour = b.start.split(':')[0];
+                                  const lastHour = lastSlotTime.split(':')[0];
+                                  
+                                  if (startHour === lastHour) {
+                                    return (
+                                      <div className="flex flex-wrap items-center gap-2">
+                                        <span className="font-black text-slate-900 text-xl tracking-tight">{b.start}</span>
+                                        {b.grade !== 'None' && (
+                                          <span className={`px-2 py-0.5 rounded text-xs font-black uppercase ${GRADE_COLORS[b.grade].badge}`}>
+                                            Betyg {b.grade}
+                                          </span>
+                                        )}
+                                      </div>
+                                    );
+                                  } else {
+                                    return (
+                                      <>
+                                        <span className="text-slate-500 font-semibold text-sm leading-tight mb-0.5">Starttider mellan</span>
+                                        <div className="flex flex-wrap items-center gap-2">
+                                          <div className="font-black text-slate-900 text-xl tracking-tight flex items-center gap-1.5 whitespace-nowrap">
+                                            <span>{b.start}</span>
+                                            <span className="text-slate-400 font-medium text-lg">och</span>
+                                            <span>{lastSlotTime}</span>
+                                          </div>
+                                          {b.grade !== 'None' && (
+                                            <span className={`px-2 py-0.5 rounded text-xs font-black uppercase ${GRADE_COLORS[b.grade].badge}`}>
+                                              Betyg {b.grade}
+                                            </span>
+                                          )}
+                                        </div>
+                                      </>
+                                    );
+                                  }
+                                })()}
                               </div>
                               <div className="text-sm text-slate-500 font-semibold mt-1">
-                                {b.slots.length} available {b.slots.length === 1 ? 'slot' : 'slots'}
+                                {b.slots.length} tillgänglig{b.slots.length === 1 ? '' : 'a'} tidsplatser
                               </div>
                             </div>
                           </div>
@@ -700,7 +749,7 @@ export default function CalendarClient({ initialData }: Props) {
             <div className="px-6 py-4 border-b border-slate-100 flex justify-between items-center">
               <h3 className="font-black text-lg text-slate-900 flex items-center gap-2">
                 <Settings size={20} className="text-blue-600" />
-                Configure Presets (JSON)
+                Konfigurera förinställningar (JSON)
               </h3>
               <button 
                 onClick={() => setIsConfigOpen(false)} 
@@ -712,7 +761,7 @@ export default function CalendarClient({ initialData }: Props) {
             
             <div className="p-6 bg-slate-50 flex-1">
               <p className="text-sm text-slate-500 mb-4 font-medium">
-                You can add, remove, or modify your presets below using JSON. Use days 0-6 (0 = Sunday). Grades can be A, B, C, D, or E.
+                Du kan lägga till, ta bort eller ändra dina förinställningar nedan med JSON. Använd dagar 0-6 (0 = Söndag). Betyg kan vara A, B, C, D eller E.
               </p>
               <textarea
                 value={configJson}
@@ -727,13 +776,13 @@ export default function CalendarClient({ initialData }: Props) {
                 onClick={() => setIsConfigOpen(false)}
                 className="px-5 py-2.5 rounded-xl text-sm font-bold text-slate-600 hover:bg-slate-100 transition-colors"
               >
-                Cancel
+                Avbryt
               </button>
               <button
                 onClick={saveConfig}
                 className="px-5 py-2.5 rounded-xl text-sm font-black bg-blue-600 hover:bg-blue-700 text-white shadow-sm transition-colors"
               >
-                Save Configuration
+                Spara konfiguration
               </button>
             </div>
           </div>
