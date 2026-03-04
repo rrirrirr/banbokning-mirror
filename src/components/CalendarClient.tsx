@@ -529,7 +529,7 @@ export default function CalendarClient({ initialData }: Props) {
                         {/* Accordion Content */}
                         {selectedBlock?.start === b.start && selectedBlock?.date === day.date && (
                           <div className="pt-0 border-t border-slate-100 bg-slate-50/50 rounded-b-2xl">
-                             <div className="mt-2 bg-white rounded-xl border-y sm:border border-slate-200 overflow-hidden shadow-sm flex flex-col -mx-4 sm:mx-4 mb-4">
+                             <div className="mt-2 bg-white rounded-xl border-y sm:border border-slate-200 overflow-hidden shadow-sm flex flex-col mx-4 mb-4">
                                 <div 
                                   className="overflow-x-auto pb-4 custom-scrollbar" 
                                   ref={(el) => {
@@ -606,78 +606,55 @@ export default function CalendarClient({ initialData }: Props) {
                                                 else if (info.text.toLowerCase().includes('träning')) bgColor = 'bg-green-100/60 text-green-900';
                                                 else if (info.text.toLowerCase().includes('uthyrning')) bgColor = 'bg-amber-100/60 text-amber-900';
 
-                                                if (info.available && !isSameAsPrev) {
-                                                  const durationMins = getAvailableDuration(track, originalIndex);
-                                                  const visibleSpanCount = Math.min(durationMins / 30, visibleSlots.length - idx);
-                                                  
+                                                if (info.available) {
                                                   const isSelecting = bookingData?.track === track && bookingData?.date === selectedBlock.date;
-                                                  
-                                                  if (isSelecting) {
-                                                     const slotsInBlock = Array.from({ length: durationMins / 30 }).map((_, i) => addMinutes(slot.time, i * 30));
-                                                     const visibleSlotsInBlock = slotsInBlock.filter(t => visibleSlots.some(vs => vs.time === t));
-
-                                                     return (
-                                                       <div key={slot.time} style={{ width: `${visibleSpanCount * 3}rem` }} className="shrink-0 flex items-stretch border-r border-slate-200/50 bg-slate-50 relative group/boka">
-                                                         {visibleSlotsInBlock.map((subTime) => {
-                                                            const isSelected = subTime >= bookingData.time && subTime < addMinutes(bookingData.time, bookingData.maxDurationHours * 60);
-                                                            return (
-                                                              <div 
-                                                                key={subTime} 
-                                                                className="flex-1 border-r border-dashed border-slate-300 last:border-r-0 p-0.5 flex flex-col items-center justify-center relative cursor-pointer group/cell hover:bg-slate-100 min-h-[44px]"
-                                                                onClick={() => {
-                                                                  if (isSelected) {
-                                                                     if (bookingData.maxDurationHours <= 0.5) {
-                                                                       setBookingData(null);
-                                                                     } else {
-                                                                       setBookingData({ ...bookingData, time: subTime, maxDurationHours: 0.5 });
-                                                                     }
-                                                                  } else {
-                                                                     if (subTime === addMinutes(bookingData.time, bookingData.maxDurationHours * 60)) {
-                                                                        setBookingData({ ...bookingData, maxDurationHours: bookingData.maxDurationHours + 0.5 });
-                                                                     } else if (addMinutes(subTime, 30) === bookingData.time) {
-                                                                        setBookingData({ ...bookingData, time: subTime, maxDurationHours: bookingData.maxDurationHours + 0.5 });
-                                                                     } else {
-                                                                        setBookingData({ ...bookingData, time: subTime, maxDurationHours: 0.5 });
-                                                                     }
-                                                                  }
-                                                                }}
-                                                              >
-                                                                <div className={`w-full h-full rounded transition-all flex items-center justify-center ${isSelected ? 'bg-emerald-500 shadow-sm border border-emerald-600' : 'bg-white border border-slate-200 group-hover/cell:border-emerald-300'}`}>
-                                                                   {isSelected && <span className="text-white font-black text-[10px]">✓</span>}
-                                                                </div>
-                                                              </div>
-                                                            );
-                                                         })}
-                                                       </div>
-                                                     );
-                                                  }
-
-                                                  const endTime = addMinutes(slot.time, durationMins);
-                                                  const decimalLength = durationMins / 60;
-                                                  
-                                                  const hours = Math.floor(durationMins / 60);
-                                                  const mins = durationMins % 60;
-                                                  const durationStr = hours > 0 ? `${hours}h ${mins > 0 ? mins + 'm' : ''}` : `${mins}m`;
+                                                  const isSelected = isSelecting && slot.time >= bookingData.time && slot.time < addMinutes(bookingData.time, bookingData.maxDurationHours * 60);
 
                                                   return (
-                                                    <div key={slot.time} style={{ width: `${visibleSpanCount * 3}rem` }} className="shrink-0 p-1 border-r border-slate-200/50 bg-emerald-50 relative group/boka">
-                                                      <button 
-                                                        onClick={() => setBookingData({
-                                                          date: selectedBlock.date,
-                                                          time: slot.time,
-                                                          track: track,
-                                                          maxDurationHours: Math.min(1, decimalLength)
-                                                        })}
-                                                        className="w-full h-full min-h-[44px] bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg py-1 shadow-sm transition-all hover:shadow-md hover:-translate-y-0.5 flex flex-col items-center justify-center overflow-hidden px-1"
+                                                    <div
+                                                      key={slot.time}
+                                                      className="shrink-0 flex flex-col items-center p-0.5 border-r border-slate-200/50"
+                                                      style={{ width: '3rem' }}
+                                                    >
+                                                      <div
+                                                        className="w-full aspect-square rounded transition-all flex items-center justify-center cursor-pointer hover:bg-slate-100"
+                                                        onClick={() => {
+                                                          if (!isSelecting) {
+                                                            // First click - initialize selection
+                                                            setBookingData({
+                                                              date: selectedBlock.date,
+                                                              time: slot.time,
+                                                              track: track,
+                                                              maxDurationHours: 0.5
+                                                            });
+                                                          } else if (isSelected) {
+                                                            // Click on selected slot - shrink or clear
+                                                            if (bookingData.maxDurationHours <= 0.5) {
+                                                              setBookingData(null);
+                                                            } else {
+                                                              setBookingData({ ...bookingData, time: slot.time, maxDurationHours: 0.5 });
+                                                            }
+                                                          } else {
+                                                            // Click on unselected slot - try to expand
+                                                            if (slot.time === addMinutes(bookingData.time, bookingData.maxDurationHours * 60)) {
+                                                              setBookingData({ ...bookingData, maxDurationHours: bookingData.maxDurationHours + 0.5 });
+                                                            } else if (addMinutes(slot.time, 30) === bookingData.time) {
+                                                              setBookingData({ ...bookingData, time: slot.time, maxDurationHours: bookingData.maxDurationHours + 0.5 });
+                                                            } else {
+                                                              // New selection starting from this slot
+                                                              setBookingData({ ...bookingData, time: slot.time, maxDurationHours: 0.5 });
+                                                            }
+                                                          }
+                                                        }}
                                                       >
-                                                        <span className="font-black text-xs leading-tight">Boka</span>
-                                                        <span className="text-[9px] font-bold text-emerald-100 opacity-90 leading-tight whitespace-nowrap">Max {durationStr}</span>
-                                                      </button>
+                                                        <div className={`w-full h-full rounded transition-all flex items-center justify-center ${isSelected ? 'bg-emerald-500 shadow-sm border border-emerald-600' : 'bg-white border border-slate-200 hover:border-emerald-300'}`}>
+                                                          {isSelected && <span className="text-white font-black text-[10px]">✓</span>}
+                                                        </div>
+                                                      </div>
+                                                      <span className="text-[8px] font-bold text-slate-500 mt-0.5">{slot.time}</span>
                                                     </div>
                                                   );
                                                 }
-
-                                                if (info.available && isSameAsPrev) return null;
 
                                                 if (!info.available && !isSameAsPrev) {
                                                   let spanCount = 1;
