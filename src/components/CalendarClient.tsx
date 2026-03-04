@@ -704,6 +704,8 @@ export default function CalendarClient({ initialData }: Props) {
                                                 else if (info.text.toLowerCase().includes('uthyrning')) bgColor = 'bg-amber-100/60 text-amber-900';
 
                                                 if (info.available) {
+                                                  const isSelecting = bookingData?.track === track && bookingData?.date === selectedBlock.date;
+                                                  const isSelected = isSelecting && slot.time >= bookingData.time && slot.time < addMinutes(bookingData.time, bookingData.maxDurationHours * 60);
                                                   const inCart = isInCart(selectedBlock.date, track, slot.time);
 
                                                   return (
@@ -712,31 +714,55 @@ export default function CalendarClient({ initialData }: Props) {
                                                       className="shrink-0 flex flex-col items-center p-0.5 border-r border-slate-200/50"
                                                       style={{ width: '3rem' }}
                                                     >
-                                                      <button
-                                                        className={`w-8 h-8 rounded transition-all flex items-center justify-center ${
-                                                          inCart
-                                                            ? 'bg-emerald-500 border border-emerald-600'
-                                                            : 'bg-white border border-slate-200 hover:border-emerald-300 hover:bg-emerald-50'
-                                                        }`}
+                                                      <div
+                                                        className="w-full aspect-square rounded transition-all flex items-center justify-center cursor-pointer hover:bg-slate-100"
                                                         onClick={() => {
                                                           if (inCart) {
                                                             // Remove from cart
                                                             const item = cart.find(c => c.date === selectedBlock.date && c.track === track && c.startTime === slot.time);
                                                             if (item) removeFromCart(item.id);
-                                                          } else {
-                                                            // Add to cart
-                                                            addToCart({
+                                                          } else if (!isSelecting) {
+                                                            // First click - initialize selection
+                                                            setBookingData({
                                                               date: selectedBlock.date,
+                                                              time: slot.time,
                                                               track: track,
-                                                              startTime: slot.time,
-                                                              endTime: addMinutes(slot.time, 30),
-                                                              durationHours: 0.5
+                                                              maxDurationHours: 0.5
                                                             });
+                                                          } else if (isSelected) {
+                                                            // Click on selected slot - add entire range to cart and clear
+                                                            addToCart({
+                                                              date: bookingData.date,
+                                                              track: bookingData.track,
+                                                              startTime: bookingData.time,
+                                                              endTime: addMinutes(bookingData.time, bookingData.maxDurationHours * 60),
+                                                              durationHours: bookingData.maxDurationHours
+                                                            });
+                                                            setBookingData(null);
+                                                          } else {
+                                                            // Click on unselected slot - try to expand
+                                                            if (slot.time === addMinutes(bookingData.time, bookingData.maxDurationHours * 60)) {
+                                                              setBookingData({ ...bookingData, maxDurationHours: bookingData.maxDurationHours + 0.5 });
+                                                            } else if (addMinutes(slot.time, 30) === bookingData.time) {
+                                                              setBookingData({ ...bookingData, time: slot.time, maxDurationHours: bookingData.maxDurationHours + 0.5 });
+                                                            } else {
+                                                              // New selection starting from this slot
+                                                              setBookingData({ ...bookingData, time: slot.time, maxDurationHours: 0.5 });
+                                                            }
                                                           }
                                                         }}
                                                       >
-                                                        {inCart && <span className="text-white font-black text-[10px]">✓</span>}
-                                                      </button>
+                                                        <div className={`w-full h-full rounded transition-all flex items-center justify-center ${
+                                                          inCart 
+                                                            ? 'bg-emerald-100 border-2 border-emerald-500' 
+                                                            : isSelected 
+                                                              ? 'bg-emerald-500 shadow-sm border border-emerald-600' 
+                                                              : 'bg-white border border-slate-200 hover:border-emerald-300'
+                                                        }`}>
+                                                          {inCart && <span className="text-emerald-600 font-black text-[10px]">✓</span>}
+                                                          {!inCart && isSelected && <span className="text-white font-black text-[10px]">✓</span>}
+                                                        </div>
+                                                      </div>
                                                       <span className={`text-[8px] font-bold mt-0.5 ${inCart ? 'text-emerald-600' : 'text-slate-500'}`}>{slot.time}</span>
                                                     </div>
                                                   );
