@@ -2,7 +2,7 @@
 
 import { useState, useMemo, useEffect } from 'react';
 import { DaySchedule, BookingSlot } from '@/lib/calendar';
-import { CalendarIcon, Clock, MapPin, X, ChevronDown, RefreshCw, UserCircle2, Settings, ShoppingCart, Trash2 } from 'lucide-react';
+import { CalendarIcon, Clock, MapPin, X, ChevronDown, RefreshCw, UserCircle2, Settings, ShoppingCart, Trash2, CheckCircle2, AlertCircle } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 
 interface Props {
@@ -98,6 +98,11 @@ interface CartItem {
   durationHours: number;
 }
 
+interface RecentBooking extends CartItem {
+  status: 'pending' | 'confirmed' | 'failed';
+  timestamp: number;
+}
+
 function addMinutes(timeStr: string, mins: number) {
   const [h, m] = timeStr.split(':').map(Number);
   const total = h * 60 + m + mins;
@@ -153,7 +158,7 @@ const GRADE_COLORS: Record<Grade, { block: string, icon: string, badge: string }
 
 export default function CalendarClient({ initialData }: Props) {
   const router = useRouter();
-  const [data] = useState<DaySchedule[]>(initialData);
+  const data = initialData;
   const [isRefreshing, setIsRefreshing] = useState(false);
 
   // Filters State
@@ -229,6 +234,19 @@ export default function CalendarClient({ initialData }: Props) {
   useEffect(() => {
     localStorage.setItem('banbokning-min-grade-v1', minGrade);
   }, [minGrade]);
+
+  const [isLoggedIn, setIsLoggedIn] = useState(true); // Default true so it doesn't flash before effect
+  
+  // Load login state
+  useEffect(() => {
+    const savedLogin = localStorage.getItem('banbokning-logged-in-v1');
+    setIsLoggedIn(savedLogin === 'true');
+  }, []);
+
+  const handleSetLoggedIn = (val: boolean) => {
+    setIsLoggedIn(val);
+    localStorage.setItem('banbokning-logged-in-v1', val ? 'true' : 'false');
+  };
 
   // Cart helper functions
   const generateId = () => `${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
@@ -311,10 +329,20 @@ export default function CalendarClient({ initialData }: Props) {
   };
 
   const openBookingTab = (item: CartItem) => {
+    const iframeName = `booking-iframe-${item.id}`;
+    let iframe = document.getElementById(iframeName) as HTMLIFrameElement;
+    if (!iframe) {
+      iframe = document.createElement('iframe');
+      iframe.name = iframeName;
+      iframe.id = iframeName;
+      iframe.style.display = 'none';
+      document.body.appendChild(iframe);
+    }
+
     const form = document.createElement('form');
     form.method = 'POST';
     form.action = 'https://www.banbokning.se/sundbyberg/book.php';
-    form.target = '_blank';
+    form.target = iframeName;
 
     const fields = {
       update_id: '0',
@@ -325,7 +353,7 @@ export default function CalendarClient({ initialData }: Props) {
       booktime: `${item.startTime}:00`,
       booklength: item.durationHours.toString(),
       'sheet[]': ({ 'A': '1', 'B': '2', 'C': '3', 'D': '4' } as const)[item.track],
-      comment: 'BanbokningMirror'
+      comment: 'Westerberg'
     };
 
     for (const [key, value] of Object.entries(fields)) {
@@ -338,14 +366,98 @@ export default function CalendarClient({ initialData }: Props) {
 
     document.body.appendChild(form);
     form.submit();
+    
+    // Clean up form immediately, but leave iframe so it can complete the request
     document.body.removeChild(form);
+    setTimeout(() => {
+      const oldIframe = document.getElementById(iframeName);
+      if (oldIframe) document.body.removeChild(oldIframe);
+    }, 10000); // Remove iframe after 10s
   };
 
-  const bookAll = () => {
-    cart.forEach((item, i) => {
-      setTimeout(() => openBookingTab(item), i * 400);
+  const [isBooking, setIsBooking] = useState(false);
+  const [recentBookings, setRecentBookings] = useState<RecentBooking[]>([]);
+  const [isReceiptOpen, setIsReceiptOpen] = useState(false);
+
+  useEffect(() => {
+    if (recentBookings.length === 0) return;
+    
+    let changed = false;
+    const updatedBookings = recentBookings.map(rb => {
+      if (rb.status === 'confirmed') return rb;
+      
+      const dayData = data.find(d => d.date === rb.date);
+      if (!dayData) return rb; // Can't verify yet
+      
+      let allBooked = true;
+      let someBooked = false;
+      let someWesterberg = false;
+      
+      let currentTime = rb.startTime;
+      while (currentTime < rb.endTime) {
+        const slot = dayData.slots.find(s => s.time === currentTime);
+        if (slot) {
+          const trackInfo = slot.trackInfo[rb.track];
+          if (trackInfo.available) {
+             allBooked = false;
+          } else {
+             someBooked = true;
+             if (trackInfo.text.toLowerCase().includes('westerberg')) {
+                someWesterberg = true;
+             }
+          }
+        }
+        currentTime = addMinutes(currentTime, 30);
+      }
+      
+      // If it's been more than 15 seconds and still not booked
+      const isOld = Date.now() - rb.timestamp > 15000;
+      
+      if (allBooked && someBooked) {
+         changed = true;
+         return { ...rb, status: 'confirmed' };
+      } else if (someWesterberg) {
+         changed = true;
+         return { ...rb, status: 'confirmed' };
+      } else if (isOld && !allBooked) {
+         changed = true;
+         return { ...rb, status: 'failed' };
+      }
+      
+      return rb;
     });
-    setTimeout(() => clearCart(), cart.length * 400 + 1000);
+    
+    if (changed) {
+      setRecentBookings(updatedBookings);
+    }
+  }, [data, recentBookings]);
+
+  const bookAll = () => {
+    setIsBooking(true);
+    
+    const newRecent = cart.map(item => ({
+      ...item,
+      status: 'pending' as const,
+      timestamp: Date.now()
+    }));
+    setRecentBookings(prev => [...newRecent, ...prev]);
+    
+    cart.forEach((item, i) => {
+      setTimeout(() => openBookingTab(item), i * 150);
+    });
+    
+    setTimeout(() => {
+      clearCart();
+      setIsBooking(false);
+      setIsCartOpen(false);
+      setIsReceiptOpen(true);
+      
+      // We wait a tiny bit to allow the backend requests to fully register in their database
+      setTimeout(() => {
+        handleRefresh();
+      }, 1500);
+
+    }, cart.length * 150 + 500);
   };
 
   const filteredData = useMemo(() => {
@@ -413,14 +525,53 @@ export default function CalendarClient({ initialData }: Props) {
   return (
     <div className="min-h-screen bg-[#f8fafc] pb-12 font-sans relative">
       <main className="max-w-3xl mx-auto px-4 py-6">
-        <div className="flex justify-end mb-4">
+        <div className="flex justify-between items-center mb-4 gap-4 flex-wrap">
+          {!isLoggedIn ? (
+            <div className="flex flex-col sm:flex-row sm:items-center gap-3 bg-blue-50/80 p-3 rounded-xl shadow-sm border border-blue-100 flex-1">
+              <div className="flex-1">
+                <span className="text-sm font-bold text-blue-900 block">Kräver inloggning på Banbokning.se</span>
+                <span className="text-xs text-blue-700">Du måste vara inloggad för att kunna boka. Öppna sidan, logga in och kom tillbaka hit.</span>
+              </div>
+              <div className="flex items-center gap-2">
+                <a 
+                  href="https://www.banbokning.se/sundbyberg/" 
+                  target="_blank" 
+                  rel="noopener noreferrer"
+                  className="text-sm font-bold text-white bg-blue-600 hover:bg-blue-700 px-4 py-2 rounded-lg transition-colors whitespace-nowrap shadow-sm"
+                >
+                  Öppna inloggning
+                </a>
+                <button 
+                  onClick={() => handleSetLoggedIn(true)}
+                  className="text-sm font-bold text-blue-700 bg-white hover:bg-blue-50 border border-blue-200 px-4 py-2 rounded-lg transition-colors whitespace-nowrap shadow-sm"
+                >
+                  Jag är inloggad
+                </button>
+              </div>
+            </div>
+          ) : (
+            <div className="flex items-center gap-2 bg-emerald-50/80 p-2 px-3 rounded-xl shadow-sm border border-emerald-100">
+              <span className="text-xs font-bold text-emerald-700 flex items-center gap-1.5">
+                <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
+                Inloggad läge aktivt
+              </span>
+              <button 
+                onClick={() => handleSetLoggedIn(false)}
+                className="text-xs font-semibold text-emerald-600 hover:text-emerald-800 ml-2 underline decoration-emerald-300 underline-offset-2"
+              >
+                Ändra
+              </button>
+            </div>
+          )}
+
           <button 
             onClick={handleRefresh}
             disabled={isRefreshing}
-            className="flex items-center gap-2 text-sm font-bold text-slate-700 bg-white px-4 py-2 rounded-xl shadow-sm border border-slate-200 hover:bg-slate-50 transition-all disabled:opacity-50"
+            className="flex items-center gap-2 text-sm font-bold text-slate-700 bg-white px-4 py-2 rounded-xl shadow-sm border border-slate-200 hover:bg-slate-50 transition-all disabled:opacity-50 h-9"
           >
             <RefreshCw size={16} className={isRefreshing ? "animate-spin" : ""} />
-            Synkronisera kalender
+            <span className="hidden sm:inline">Synkronisera kalender</span>
+            <span className="sm:hidden">Synka</span>
           </button>
         </div>
 
@@ -889,13 +1040,110 @@ export default function CalendarClient({ initialData }: Props) {
                   </button>
                   <button
                     onClick={bookAll}
-                    className="flex-[2] bg-emerald-500 hover:bg-emerald-600 text-white px-4 py-3 rounded-xl font-black shadow-sm transition-transform active:scale-95"
+                    disabled={isBooking}
+                    className="flex-[2] bg-emerald-500 hover:bg-emerald-600 text-white px-4 py-3 rounded-xl font-black shadow-sm transition-transform active:scale-95 disabled:opacity-50 flex items-center justify-center gap-2"
                   >
-                    Boka alla
+                    {isBooking ? (
+                      <>
+                        <RefreshCw size={18} className="animate-spin" />
+                        Bokar...
+                      </>
+                    ) : (
+                      'Boka alla'
+                    )}
                   </button>
                 </div>
+                <p className="text-xs text-slate-500 mt-4 text-center font-medium">
+                  Observera: Du måste vara inloggad på banbokning.se för att bokningarna ska genomföras. Använd inloggningen överst på sidan först.
+                </p>
               </div>
             )}
+          </div>
+        </div>
+      )}
+
+      {/* Receipt / Confirmation Modal */}
+      {isReceiptOpen && (
+        <div
+          className="fixed inset-0 z-[80] flex items-center justify-center bg-slate-900/60 backdrop-blur-sm p-4"
+          onClick={() => setIsReceiptOpen(false)}
+        >
+          <div
+            className="bg-white w-full max-w-lg rounded-2xl shadow-2xl flex flex-col max-h-[80vh]"
+            onClick={e => e.stopPropagation()}
+          >
+            <div className="px-6 py-4 border-b border-slate-100 flex justify-between items-center">
+              <h3 className="font-black text-xl text-slate-900 flex items-center gap-2">
+                <CheckCircle2 size={24} className="text-emerald-600" />
+                Bokningsstatus
+              </h3>
+              <button
+                onClick={() => setIsReceiptOpen(false)}
+                className="p-2 hover:bg-slate-100 rounded-full text-slate-500 transition-colors"
+              >
+                <X size={20} />
+              </button>
+            </div>
+
+            <div className="flex-1 overflow-y-auto p-6 bg-slate-50">
+              <p className="text-sm text-slate-600 font-medium mb-4">
+                Dina bokningar har skickats. Vi övervakar kalendern för att bekräfta att de dyker upp (det kan ta några sekunder).
+              </p>
+              <div className="space-y-3">
+                {recentBookings.map((item) => (
+                  <div
+                    key={item.id}
+                    className="bg-white rounded-xl p-4 border border-slate-200 shadow-sm flex items-center justify-between"
+                  >
+                    <div>
+                      <div className="flex items-center gap-2 mb-1">
+                        <span className="font-black text-lg text-blue-600">{item.track}</span>
+                        <span className="text-slate-400">•</span>
+                        <span className="font-bold text-slate-700">{item.date}</span>
+                      </div>
+                      <div className="text-sm font-bold text-slate-900">
+                        {item.startTime} - {item.endTime}
+                      </div>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      {item.status === 'pending' && (
+                        <span className="flex items-center gap-1.5 text-xs font-bold text-blue-600 bg-blue-50 px-2.5 py-1 rounded-lg border border-blue-100">
+                          <RefreshCw size={14} className="animate-spin" />
+                          Väntar...
+                        </span>
+                      )}
+                      {item.status === 'confirmed' && (
+                        <span className="flex items-center gap-1.5 text-xs font-bold text-emerald-700 bg-emerald-50 px-2.5 py-1 rounded-lg border border-emerald-200">
+                          <CheckCircle2 size={14} />
+                          Bekräftad
+                        </span>
+                      )}
+                      {item.status === 'failed' && (
+                        <span className="flex items-center gap-1.5 text-xs font-bold text-rose-700 bg-rose-50 px-2.5 py-1 rounded-lg border border-rose-200">
+                          <AlertCircle size={14} />
+                          Okänt / Gick ej igenom
+                        </span>
+                      )}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            <div className="px-6 py-4 border-t border-slate-100 bg-white rounded-b-2xl flex gap-3">
+              <button
+                onClick={handleRefresh}
+                className="flex-1 px-4 py-2.5 rounded-xl font-bold text-blue-600 bg-blue-50 hover:bg-blue-100 transition-colors border border-blue-200 flex items-center justify-center gap-2"
+              >
+                <RefreshCw size={16} /> Uppdatera manuellt
+              </button>
+              <button
+                onClick={() => setIsReceiptOpen(false)}
+                className="flex-1 px-4 py-2.5 rounded-xl font-bold text-slate-600 hover:bg-slate-100 transition-colors border border-slate-300"
+              >
+                Stäng
+              </button>
+            </div>
           </div>
         </div>
       )}
