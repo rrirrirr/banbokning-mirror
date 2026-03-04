@@ -714,7 +714,19 @@ export default function CalendarClient({ initialData }: Props) {
                                 })()}
                               </div>
                               <div className="text-sm text-slate-500 font-semibold mt-1">
-                                {b.slots.length} tillgänglig{b.slots.length === 1 ? '' : 'a'} tidsplatser
+                                {(() => {
+                                  const tracks = new Set<string>();
+                                  b.slots.forEach(slot => {
+                                    if (slot.tracks.A) tracks.add('A');
+                                    if (slot.tracks.B) tracks.add('B');
+                                    if (slot.tracks.C) tracks.add('C');
+                                    if (slot.tracks.D) tracks.add('D');
+                                  });
+                                  const sortedTracks = Array.from(tracks).sort();
+                                  if (sortedTracks.length === 0) return '';
+                                  if (sortedTracks.length === 1) return `Bana ${sortedTracks[0]}`;
+                                  return `Bana ${sortedTracks.join(', ')}`;
+                                })()}
                               </div>
                             </div>
                           </div>
