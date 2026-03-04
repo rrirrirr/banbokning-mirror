@@ -722,7 +722,14 @@ export default function CalendarClient({ initialData }: Props) {
                     const palette = BANBOKNING_STYLES[styleKey] || BANBOKNING_STYLES.default;
                     
                     return (
-                      <div key={i} className="flex flex-col rounded-xl overflow-hidden shadow-sm border border-slate-200/60" style={{ backgroundColor: palette.bg }}>
+                      <a 
+                        key={i} 
+                        href={`https://www.banbokning.se/sundbyberg/index.php?view=day&date=${b.date.replace(/-/g, '')}`}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="flex flex-col rounded-xl overflow-hidden shadow-sm border border-slate-200/60 hover:shadow-md hover:-translate-y-0.5 transition-all cursor-pointer block" 
+                        style={{ backgroundColor: palette.bg, textDecoration: 'none' }}
+                      >
                         <div 
                           className="flex items-center justify-between px-3 py-1.5"
                           style={{ backgroundColor: palette.header }}
@@ -743,7 +750,7 @@ export default function CalendarClient({ initialData }: Props) {
                             {b.name}
                           </div>
                         </div>
-                      </div>
+                      </a>
                     );
                   })}
                 </div>
