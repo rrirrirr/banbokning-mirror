@@ -36,6 +36,16 @@ export async function GET(request: NextRequest) {
 
   let markdown = '# Banbokning Sundbyberg Calendar\n\n';
 
+  // Add URL parameter instructions
+  markdown += '## URL Parameters\n\n';
+  markdown += '| Parameter | Description | Example |\n';
+  markdown += '|-----------|-------------|--------|\n';
+  markdown += '| `date` | Filter by specific date (YYYY-MM-DD) | `?date=2024-03-15` |\n';
+  markdown += '| `startTime` | Filter slots starting at or after this time | `?startTime=10:00` |\n';
+  markdown += '| `endTime` | Filter slots before this time | `?endTime=18:00` |\n';
+  markdown += '| `minDuration` | Minimum available block duration in minutes | `?minDuration=60` |\n';
+  markdown += '\nCombine parameters: `?date=2024-03-15&startTime=10:00&endTime=18:00&minDuration=90`\n\n---\n\n';
+
   // Add filter info
   const filters: string[] = [];
   if (dateParam) filters.push(`**Date**: ${dateParam}`);
