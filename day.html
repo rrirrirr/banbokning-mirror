@@ -1,0 +1,412 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN" "http://www.w3.org/TR/html4/loose.dtd">
+<html>
+<head>
+	<meta http-equiv="Content-Type" content="text/html; charset=UTF-8" lang="sv">
+	<title>Bokningskalender - Sundbybergs Curlinghall</title>
+	<link rel="stylesheet" type="text/css" href="css/thickbox.css" media="screen">
+	<link rel="stylesheet" type="text/css" href="css/stylesheet.css">
+	<link rel="stylesheet" type="text/css" href="css/tabmenu.css">
+	<link rel="stylesheet" type="text/css" href="jquery/css/redmond/jquery-ui-1.9.0.custom.min.css">
+	<script type="text/javascript" src="jquery/js/jquery-1.8.2.min.js"></script>
+	<script type="text/javascript" src="jquery/js/jquery-ui-1.9.0.custom.min.js"></script>
+	<script type="text/javascript" src="jquery/js/jquery.ui.datepicker-sv.js"></script>
+	<script type="text/javascript" src="jquery/js/jquery.ui.widget.min.js"></script>
+	<script type="text/javascript" src="jquery/js/jquery.ui.button.min.js"></script>
+	<script type="text/javascript" src="src/thickbox.js"></script>
+	<script type="text/javascript" src="src/overlib.js" ></script>
+	<script type="text/javascript" src="src/javascript.js" ></script>
+</head>
+
+<body>
+	<div id="logo"><img src="img/logo.gif" alt="logo"><img src="img/AmatorernaLogo.jpg" alt="logo"></div>
+	<div id="header-text">
+	Bokningskalender - Sundbybergs Curlinghall	</div>
+	<div id="guser" class="login-bar">
+				<form action="login.php?view=day&amp;date=20260303" method="post"> 
+			<label for="login_user">Anv&auml;ndare</label> <input type="text" id="login_user" name="login_user" size="10">
+			<label for="login_pass">L&ouml;senord</label> <input type="password" id="login_pass" name="login_pass" size="10">
+			<input type="submit" value="Logga in">
+		</form>
+			</div>
+	<div class="gbh" style="left: 0pt;"></div>
+	<div class="gbh" style="right: 0pt;"></div>
+	<div style="clear: both;"></div>
+	<div id="calcontent">
+		<table id="mothertable" width="100%" cellspacing="0" cellpadding="0" border="0">
+			<tbody>
+				<tr>
+					<td class="noprint">			
+					</td>
+					<td>
+						<table width="100%" cellspacing="0" cellpadding="0" border="0">
+							<tr>
+								<td align="left">
+									<div class="headerPaginator">
+		<a href="index.php?view=day&amp;date=20260302">Föregående</a>
+		<a href="index.php?view=day">Idag</a>
+		<a href="index.php?view=day&amp;date=20260304">Nästa</a>
+	</div>
+
+	<div class="headerCalendar">
+		<input type="hidden" id="datepicker">
+	</div>
+	<div class="headerText">
+		<h3>Tisdag den 3&nbsp;mars 2026</h3>
+	</div>
+								</td>
+								<td>
+									<span class="dateunderlay">
+								<a name="book"></a>Passet har avbokats.									</span>
+								</td>
+								
+								<td style="float: right; text-align: right;">					
+										<table cellspacing="0" cellpadding="0">
+											<tbody>
+												<tr>
+													<td class="noprint">																									
+													<div class="tabs">
+														<form action="">
+															<div id="tabSelector">
+																																<input type="radio" id="day" name="day" checked='checked' onclick="setUrl('day')"><label for="day">Dag</label>
+																<input type="radio" id="week" name="week" onclick="setUrl('week')"><label for="week">Vecka</label>
+																<input type="radio" id="month" name="month" onclick="setUrl('month')"><label for="month">Månad</label>
+															</div>
+														</form>
+
+													</div>
+													</td>	
+													<td class="noprint"></td>
+												</tr>
+											</tbody>
+										</table>
+									</td>
+							</tr>
+						</table>
+						<div class="printborder mainGrid">
+						<table id="calendar" class="slot" cellspacing="0" cellpadding="0" summary="Bokningskalender" border="0" width="100%">	
+	<tbody>
+	<tr>
+		<th colspan="5" class="mainGrid">&nbsp;</th>
+	</tr>
+	<tr>
+	 	<th scope="col" abbr="Tid" title="Tid" class="row">Tid</th>
+	 			<th scope="col" abbr="A" class="sheet" title="A">Bana A</th>
+			<th scope="col" abbr="B" class="sheet" title="B">Bana B</th>
+			<th scope="col" abbr="C" class="sheet" title="C">Bana C</th>
+			<th scope="col" abbr="D" class="sheet" title="D">Bana D</th>
+	</tr>
+			<tr>
+			<th scope="row" class="row" valign="top" width="10px">08:00</th>
+			<td></td>
+			<td></td>
+			<td></td>
+			<td></td>
+		</tr>
+		<tr>
+			<th scope="row" class="row" valign="top" width="10px">&nbsp;</th>
+			<td></td>
+			<td></td>
+			<td></td>
+			<td></td>
+		</tr>
+		<tr>
+			<th scope="row" class="row" valign="top" width="10px">08:30</th>
+			<td></td>
+			<td></td>
+			<td></td>
+			<td></td>
+		</tr>
+		<tr>
+			<th scope="row" class="row" valign="top" width="10px">&nbsp;</th>
+			<td></td>
+			<td></td>
+			<td></td>
+			<td></td>
+		</tr>
+		<tr>
+			<th scope="row" class="row" valign="top" width="10px">09:00</th>
+			<td class="style_5_sel" onmouseover="return overlib('Lunchcurling<br>Lunchcurling<br>Bokad av Curlinghallen');" onmouseout="return nd();">Lunchcurling 09:00-12:30</td>
+			<td class="style_5_sel" onmouseover="return overlib('Lunchcurling<br>Lunchcurling<br>Bokad av Curlinghallen');" onmouseout="return nd();">Lunchcurling 09:00-12:30</td>
+			<td class="style_5_sel" onmouseover="return overlib('Lunchcurling<br>Lunchcurling<br>Bokad av Curlinghallen');" onmouseout="return nd();">Lunchcurling 09:00-12:30</td>
+			<td class="style_5_sel" onmouseover="return overlib('Lunchcurling<br>Lunchcurling<br>Bokad av Curlinghallen');" onmouseout="return nd();">Lunchcurling 09:00-12:30</td>
+		</tr>
+		<tr>
+			<th scope="row" class="row" valign="top" width="10px">&nbsp;</th>
+			<td rowspan="13" class="style_5" onmouseover="return overlib('Lunchcurling<br>Lunchcurling<br>Bokad av Curlinghallen');" onmouseout="return nd();">Lunchcurling</td>
+			<td rowspan="13" class="style_5" onmouseover="return overlib('Lunchcurling<br>Lunchcurling<br>Bokad av Curlinghallen');" onmouseout="return nd();">Lunchcurling</td>
+			<td rowspan="13" class="style_5" onmouseover="return overlib('Lunchcurling<br>Lunchcurling<br>Bokad av Curlinghallen');" onmouseout="return nd();">Lunchcurling</td>
+			<td rowspan="13" class="style_5" onmouseover="return overlib('Lunchcurling<br>Lunchcurling<br>Bokad av Curlinghallen');" onmouseout="return nd();">Lunchcurling</td>
+		</tr>
+		<tr>
+			<th scope="row" class="row" valign="top" width="10px">09:30</th>
+		</tr>
+		<tr>
+			<th scope="row" class="row" valign="top" width="10px">&nbsp;</th>
+		</tr>
+		<tr>
+			<th scope="row" class="row" valign="top" width="10px">10:00</th>
+		</tr>
+		<tr>
+			<th scope="row" class="row" valign="top" width="10px">&nbsp;</th>
+		</tr>
+		<tr>
+			<th scope="row" class="row" valign="top" width="10px">10:30</th>
+		</tr>
+		<tr>
+			<th scope="row" class="row" valign="top" width="10px">&nbsp;</th>
+		</tr>
+		<tr>
+			<th scope="row" class="row" valign="top" width="10px">11:00</th>
+		</tr>
+		<tr>
+			<th scope="row" class="row" valign="top" width="10px">&nbsp;</th>
+		</tr>
+		<tr>
+			<th scope="row" class="row" valign="top" width="10px">11:30</th>
+		</tr>
+		<tr>
+			<th scope="row" class="row" valign="top" width="10px">&nbsp;</th>
+		</tr>
+		<tr>
+			<th scope="row" class="row" valign="top" width="10px">12:00</th>
+		</tr>
+		<tr>
+			<th scope="row" class="row" valign="top" width="10px">&nbsp;</th>
+		</tr>
+		<tr>
+			<th scope="row" class="row" valign="top" width="10px">12:30</th>
+			<td class="style_3_sel" onmouseover="return overlib('Uthyrning<br>Linda<br>Bokad av Curlinghallen');" onmouseout="return nd();">Uthyrning 12:30-14:30</td>
+			<td class="style_1_sel" onmouseover="return overlib('Träning<br>Albin<br>Bokad av Albin Kjellberg');" onmouseout="return nd();">Träning 12:30-13:30</td>
+			<td></td>
+			<td class="style_1_sel" onmouseover="return overlib('Träning<br>Westerberg d.y.<br>Bokad av Joel Westerberg');" onmouseout="return nd();">Träning 12:30-14:00</td>
+		</tr>
+		<tr>
+			<th scope="row" class="row" valign="top" width="10px">&nbsp;</th>
+			<td rowspan="7" class="style_3" onmouseover="return overlib('Uthyrning<br>Linda<br>Bokad av Curlinghallen');" onmouseout="return nd();">Linda</td>
+			<td rowspan="3" class="style_1" onmouseover="return overlib('Träning<br>Albin<br>Bokad av Albin Kjellberg');" onmouseout="return nd();">Albin</td>
+			<td></td>
+			<td rowspan="5" class="style_1" onmouseover="return overlib('Träning<br>Westerberg d.y.<br>Bokad av Joel Westerberg');" onmouseout="return nd();">Westerberg d.y.</td>
+		</tr>
+		<tr>
+			<th scope="row" class="row" valign="top" width="10px">13:00</th>
+			<td></td>
+		</tr>
+		<tr>
+			<th scope="row" class="row" valign="top" width="10px">&nbsp;</th>
+			<td></td>
+		</tr>
+		<tr>
+			<th scope="row" class="row" valign="top" width="10px">13:30</th>
+			<td class="style_4_sel" onmouseover="return overlib('Isvård<br>Isvård<br>Bokad av Curlinghallen');" onmouseout="return nd();">Isvård 13:30-14:00</td>
+			<td class="style_4_sel" onmouseover="return overlib('Isvård<br>Isvård<br>Bokad av Curlinghallen');" onmouseout="return nd();">Isvård 13:30-14:00</td>
+		</tr>
+		<tr>
+			<th scope="row" class="row" valign="top" width="10px">&nbsp;</th>
+			<td rowspan="1" class="style_4" onmouseover="return overlib('Isvård<br>Isvård<br>Bokad av Curlinghallen');" onmouseout="return nd();">Isvård</td>
+			<td rowspan="1" class="style_4" onmouseover="return overlib('Isvård<br>Isvård<br>Bokad av Curlinghallen');" onmouseout="return nd();">Isvård</td>
+		</tr>
+		<tr>
+			<th scope="row" class="row" valign="top" width="10px">14:00</th>
+			<td class="style_3_sel" onmouseover="return overlib('Uthyrning<br>soundtrack<br>Bokad av Curlinghallen');" onmouseout="return nd();">Uthyrning 14:00-16:00</td>
+			<td class="style_3_sel" onmouseover="return overlib('Uthyrning<br>fenixoutdoor<br>Bokad av Curlinghallen');" onmouseout="return nd();">Uthyrning 14:00-16:00</td>
+			<td class="style_1_sel" onmouseover="return overlib('Träning<br>Wranå<br>Bokad av Curlinghallen');" onmouseout="return nd();">Träning 14:00-15:30</td>
+		</tr>
+		<tr>
+			<th scope="row" class="row" valign="top" width="10px">&nbsp;</th>
+			<td rowspan="7" class="style_3" onmouseover="return overlib('Uthyrning<br>soundtrack<br>Bokad av Curlinghallen');" onmouseout="return nd();">soundtrack</td>
+			<td rowspan="7" class="style_3" onmouseover="return overlib('Uthyrning<br>fenixoutdoor<br>Bokad av Curlinghallen');" onmouseout="return nd();">fenixoutdoor</td>
+			<td rowspan="5" class="style_1" onmouseover="return overlib('Träning<br>Wranå<br>Bokad av Curlinghallen');" onmouseout="return nd();">Wranå</td>
+		</tr>
+		<tr>
+			<th scope="row" class="row" valign="top" width="10px">14:30</th>
+			<td></td>
+		</tr>
+		<tr>
+			<th scope="row" class="row" valign="top" width="10px">&nbsp;</th>
+			<td></td>
+		</tr>
+		<tr>
+			<th scope="row" class="row" valign="top" width="10px">15:00</th>
+			<td class="style_4_sel" onmouseover="return overlib('Isvård<br>isvård<br>Bokad av Curlinghallen');" onmouseout="return nd();">Isvård 15:00-16:00</td>
+		</tr>
+		<tr>
+			<th scope="row" class="row" valign="top" width="10px">&nbsp;</th>
+			<td rowspan="3" class="style_4" onmouseover="return overlib('Isvård<br>isvård<br>Bokad av Curlinghallen');" onmouseout="return nd();">isvård</td>
+		</tr>
+		<tr>
+			<th scope="row" class="row" valign="top" width="10px">15:30</th>
+			<td class="style_4_sel" onmouseover="return overlib('Isvård<br>Isvård<br>Bokad av Curlinghallen');" onmouseout="return nd();">Isvård 15:30-16:00</td>
+		</tr>
+		<tr>
+			<th scope="row" class="row" valign="top" width="10px">&nbsp;</th>
+			<td rowspan="1" class="style_4" onmouseover="return overlib('Isvård<br>Isvård<br>Bokad av Curlinghallen');" onmouseout="return nd();">Isvård</td>
+		</tr>
+		<tr>
+			<th scope="row" class="row" valign="top" width="10px">16:00</th>
+			<td class="style_3_sel" onmouseover="return overlib('Uthyrning<br>Fortum<br>Bokad av Curlinghallen');" onmouseout="return nd();">Uthyrning 16:00-18:00</td>
+			<td class="style_3_sel" onmouseover="return overlib('Uthyrning<br>Fortum<br>Bokad av Curlinghallen');" onmouseout="return nd();">Uthyrning 16:00-18:00</td>
+			<td class="style_3_sel" onmouseover="return overlib('Uthyrning<br>noresc<br>Bokad av Curlinghallen');" onmouseout="return nd();">Uthyrning 16:00-18:00</td>
+			<td class="style_3_sel" onmouseover="return overlib('Uthyrning<br>noresc<br>Bokad av Curlinghallen');" onmouseout="return nd();">Uthyrning 16:00-18:00</td>
+		</tr>
+		<tr>
+			<th scope="row" class="row" valign="top" width="10px">&nbsp;</th>
+			<td rowspan="7" class="style_3" onmouseover="return overlib('Uthyrning<br>Fortum<br>Bokad av Curlinghallen');" onmouseout="return nd();">Fortum</td>
+			<td rowspan="7" class="style_3" onmouseover="return overlib('Uthyrning<br>Fortum<br>Bokad av Curlinghallen');" onmouseout="return nd();">Fortum</td>
+			<td rowspan="7" class="style_3" onmouseover="return overlib('Uthyrning<br>noresc<br>Bokad av Curlinghallen');" onmouseout="return nd();">noresc</td>
+			<td rowspan="7" class="style_3" onmouseover="return overlib('Uthyrning<br>noresc<br>Bokad av Curlinghallen');" onmouseout="return nd();">noresc</td>
+		</tr>
+		<tr>
+			<th scope="row" class="row" valign="top" width="10px">16:30</th>
+		</tr>
+		<tr>
+			<th scope="row" class="row" valign="top" width="10px">&nbsp;</th>
+		</tr>
+		<tr>
+			<th scope="row" class="row" valign="top" width="10px">17:00</th>
+		</tr>
+		<tr>
+			<th scope="row" class="row" valign="top" width="10px">&nbsp;</th>
+		</tr>
+		<tr>
+			<th scope="row" class="row" valign="top" width="10px">17:30</th>
+		</tr>
+		<tr>
+			<th scope="row" class="row" valign="top" width="10px">&nbsp;</th>
+		</tr>
+		<tr>
+			<th scope="row" class="row" valign="top" width="10px">18:00</th>
+			<td class="style_2_sel" onmouseover="return overlib('Amatörernas CK<br>Rullarna<br>Bokad av Curlinghallen');" onmouseout="return nd();">Amatörernas CK 18:00-19:30</td>
+			<td class="style_2_sel" onmouseover="return overlib('Amatörernas CK<br>Rullarna<br>Bokad av Curlinghallen');" onmouseout="return nd();">Amatörernas CK 18:00-19:30</td>
+			<td class="style_8_sel" onmouseover="return overlib('Övrigt<br>Gemensam träning<br>Bokad av Curlinghallen');" onmouseout="return nd();">Övrigt 18:00-19:30</td>
+			<td class="style_8_sel" onmouseover="return overlib('Övrigt<br>Gemensam träning<br>Bokad av Curlinghallen');" onmouseout="return nd();">Övrigt 18:00-19:30</td>
+		</tr>
+		<tr>
+			<th scope="row" class="row" valign="top" width="10px">&nbsp;</th>
+			<td rowspan="5" class="style_2" onmouseover="return overlib('Amatörernas CK<br>Rullarna<br>Bokad av Curlinghallen');" onmouseout="return nd();">Rullarna</td>
+			<td rowspan="5" class="style_2" onmouseover="return overlib('Amatörernas CK<br>Rullarna<br>Bokad av Curlinghallen');" onmouseout="return nd();">Rullarna</td>
+			<td rowspan="5" class="style_8" onmouseover="return overlib('Övrigt<br>Gemensam träning<br>Bokad av Curlinghallen');" onmouseout="return nd();">Gemensam träning</td>
+			<td rowspan="5" class="style_8" onmouseover="return overlib('Övrigt<br>Gemensam träning<br>Bokad av Curlinghallen');" onmouseout="return nd();">Gemensam träning</td>
+		</tr>
+		<tr>
+			<th scope="row" class="row" valign="top" width="10px">18:30</th>
+		</tr>
+		<tr>
+			<th scope="row" class="row" valign="top" width="10px">&nbsp;</th>
+		</tr>
+		<tr>
+			<th scope="row" class="row" valign="top" width="10px">19:00</th>
+		</tr>
+		<tr>
+			<th scope="row" class="row" valign="top" width="10px">&nbsp;</th>
+		</tr>
+		<tr>
+			<th scope="row" class="row" valign="top" width="10px">19:30</th>
+			<td class="style_8_sel" onmouseover="return overlib('Övrigt<br>Fyrfoten flyktingar* - Urspårat<br>Bokad av Johan larsson');" onmouseout="return nd();">Övrigt 19:30-21:30</td>
+			<td class="style_8_sel" onmouseover="return overlib('Övrigt<br>På Banan - Rolling Stones*<br>Bokad av Johan larsson');" onmouseout="return nd();">Övrigt 19:30-21:30</td>
+			<td class="style_8_sel" onmouseover="return overlib('Övrigt<br>Runnqvist* - Westerberg<br>Bokad av Johan larsson');" onmouseout="return nd();">Övrigt 19:30-21:30</td>
+			<td class="style_8_sel" onmouseover="return overlib('Övrigt<br>Forsberg* - On the Rocks<br>Bokad av Johan larsson');" onmouseout="return nd();">Övrigt 19:30-21:30</td>
+		</tr>
+		<tr>
+			<th scope="row" class="row" valign="top" width="10px">&nbsp;</th>
+			<td rowspan="7" class="style_8" onmouseover="return overlib('Övrigt<br>Fyrfoten flyktingar* - Urspårat<br>Bokad av Johan larsson');" onmouseout="return nd();">Fyrfoten flyktingar* - Urspårat</td>
+			<td rowspan="7" class="style_8" onmouseover="return overlib('Övrigt<br>På Banan - Rolling Stones*<br>Bokad av Johan larsson');" onmouseout="return nd();">På Banan - Rolling Stones*</td>
+			<td rowspan="7" class="style_8" onmouseover="return overlib('Övrigt<br>Runnqvist* - Westerberg<br>Bokad av Johan larsson');" onmouseout="return nd();">Runnqvist* - Westerberg</td>
+			<td rowspan="7" class="style_8" onmouseover="return overlib('Övrigt<br>Forsberg* - On the Rocks<br>Bokad av Johan larsson');" onmouseout="return nd();">Forsberg* - On the Rocks</td>
+		</tr>
+		<tr>
+			<th scope="row" class="row" valign="top" width="10px">20:00</th>
+		</tr>
+		<tr>
+			<th scope="row" class="row" valign="top" width="10px">&nbsp;</th>
+		</tr>
+		<tr>
+			<th scope="row" class="row" valign="top" width="10px">20:30</th>
+		</tr>
+		<tr>
+			<th scope="row" class="row" valign="top" width="10px">&nbsp;</th>
+		</tr>
+		<tr>
+			<th scope="row" class="row" valign="top" width="10px">21:00</th>
+		</tr>
+		<tr>
+			<th scope="row" class="row" valign="top" width="10px">&nbsp;</th>
+		</tr>
+		<tr>
+			<th scope="row" class="row" valign="top" width="10px">21:30</th>
+			<td></td>
+			<td></td>
+			<td></td>
+			<td></td>
+		</tr>
+		<tr>
+			<th scope="row" class="row" valign="top" width="10px">&nbsp;</th>
+			<td></td>
+			<td></td>
+			<td></td>
+			<td></td>
+		</tr>
+		<tr>
+			<th scope="row" class="row" valign="top" width="10px">22:00</th>
+			<td></td>
+			<td></td>
+			<td></td>
+			<td></td>
+		</tr>
+		<tr>
+			<th scope="row" class="row" valign="top" width="10px">&nbsp;</th>
+			<td></td>
+			<td></td>
+			<td></td>
+			<td></td>
+		</tr>
+		<tr>
+			<th scope="row" class="row" valign="top" width="10px">22:30</th>
+			<td></td>
+			<td></td>
+			<td></td>
+			<td></td>
+		</tr>
+		<tr>
+			<th scope="row" class="row" valign="top" width="10px">&nbsp;</th>
+			<td></td>
+			<td></td>
+			<td></td>
+			<td></td>
+		</tr>
+		<tr>
+			<th scope="row" class="row" valign="top" width="10px">23:00</th>
+			<td></td>
+			<td></td>
+			<td></td>
+			<td></td>
+		</tr>
+		<tr>
+			<th scope="row" class="row" valign="top" width="10px">&nbsp;</th>
+			<td></td>
+			<td></td>
+			<td></td>
+			<td></td>
+		</tr>
+		<tr>
+			<th scope="row" class="row" valign="top" width="10px">23:30</th>
+			<td></td>
+			<td></td>
+			<td></td>
+			<td></td>
+		</tr>
+		<tr>
+			<th scope="row" class="row" valign="top" width="10px">&nbsp;</th>
+			<td></td>
+			<td></td>
+			<td></td>
+			<td></td>
+		</tr>
+	</tbody>
+</table>						</div>
+					</td>
+				</tr>
+			</tbody>
+		</table>
+	</div>
+</body>
+</html>

@@ -20,6 +20,19 @@ export interface BookingSlot {
     C: TrackInfo;
     D: TrackInfo;
   };
+  // 15-minute granularity support
+  subSlots?: {
+    // First 15 minutes of the 30-minute block
+    first: {
+      tracks: { A: boolean; B: boolean; C: boolean; D: boolean; };
+      trackInfo: { A: TrackInfo; B: TrackInfo; C: TrackInfo; D: TrackInfo; };
+    };
+    // Second 15 minutes of the 30-minute block
+    second: {
+      tracks: { A: boolean; B: boolean; C: boolean; D: boolean; };
+      trackInfo: { A: TrackInfo; B: TrackInfo; C: TrackInfo; D: TrackInfo; };
+    };
+  };
 }
 
 export interface DaySchedule {
@@ -114,13 +127,33 @@ export async function fetchAndParseCalendar(monthUrl?: string): Promise<DaySched
           const infoC = getTrackInfo(trackCells[2]);
           const infoD = getTrackInfo(trackCells[3]);
 
+          // Check if first and second halves differ for any track
+          const hasMixedA = currentSlot.tracks.A !== infoA.available || currentSlot.trackInfo.A.text !== infoA.text;
+          const hasMixedB = currentSlot.tracks.B !== infoB.available || currentSlot.trackInfo.B.text !== infoB.text;
+          const hasMixedC = currentSlot.tracks.C !== infoC.available || currentSlot.trackInfo.C.text !== infoC.text;
+          const hasMixedD = currentSlot.tracks.D !== infoD.available || currentSlot.trackInfo.D.text !== infoD.text;
+          
+          const hasAnyMixed = hasMixedA || hasMixedB || hasMixedC || hasMixedD;
+
+          if (hasAnyMixed) {
+            // Store both halves separately for 15-minute granularity
+            currentSlot.subSlots = {
+              first: {
+                tracks: { ...currentSlot.tracks },
+                trackInfo: { ...currentSlot.trackInfo }
+              },
+              second: {
+                tracks: { A: infoA.available, B: infoB.available, C: infoC.available, D: infoD.available },
+                trackInfo: { A: infoA, B: infoB, C: infoC, D: infoD }
+              }
+            };
+          }
+
+          // For backward compatibility, use AND logic for the main slot
           currentSlot.tracks.A = currentSlot.tracks.A && infoA.available;
           currentSlot.tracks.B = currentSlot.tracks.B && infoB.available;
           currentSlot.tracks.C = currentSlot.tracks.C && infoC.available;
           currentSlot.tracks.D = currentSlot.tracks.D && infoD.available;
-
-          // Merge text if different? Usually it's the same for both rows of a 30m block.
-          // Keep the first row's info as primary.
           
           slots.push(currentSlot);
           currentSlot = null;
